@@ -1,0 +1,53 @@
+{
+  "familia": {
+    "nom": "Familia Tadeo Cabezas",
+    "adults": [
+      {
+        "id": "papa",
+        "nom": "Papa",
+        "color": "#1f77b4",
+        "per_definir": false,
+        "horari": {
+          "dl": {"feina": ["08:00", "17:00"], "lloc": "oficina", "fora": ["07:00", "17:30"]},
+          "dt": {"feina": ["08:00", "17:00"], "lloc": "oficina", "fora": ["07:00", "17:30"]},
+          "dc": {"feina": ["08:00", "17:00"], "lloc": "teletreball", "fora": []},
+          "dj": {"feina": ["08:00", "17:00"], "lloc": "teletreball", "fora": []},
+          "dv": {"feina": ["08:00", "14:00"], "lloc": "oficina", "fora": ["08:00", "14:00"]}
+        }
+      },
+      {
+        "id": "mama",
+        "nom": "Mama",
+        "color": "#d62728",
+        "per_definir": true,
+        "horari": {
+          "dl": {"feina": [], "lloc": "", "fora": []},
+          "dt": {"feina": [], "lloc": "", "fora": []},
+          "dc": {"feina": [], "lloc": "", "fora": []},
+          "dj": {"feina": [], "lloc": "", "fora": []},
+          "dv": {"feina": [], "lloc": "", "fora": []}
+        }
+      }
+    ],
+    "nens": [
+      {"id": "nina1", "nom": "Nena 1", "color": "#2ca02c", "edat": null},
+      {"id": "nina2", "nom": "Nena 2", "color": "#ff7f0e", "edat": null}
+    ]
+  },
+  "cole": {"entrada": "09:00", "sortida": "17:00", "comiat": true},
+  "extraescolars": [
+    {"nina": "nina1", "dia": "dt", "inici": "18:30", "fi": "19:15", "nom": "Logopeda", "recollida": true},
+    {"nina": "nina1", "dia": "dc", "inici": "17:00", "fi": "18:00", "nom": "Biblioteca", "recollida": true},
+    {"nina": "nina1", "dia": "dj", "inici": "17:00", "fi": "19:15", "nom": "Training", "recollida": true},
+    {"nina": "nina2", "dia": "dj", "inici": "17:00", "fi": "18:39", "nom": "Training", "recollida": true},
+    {"nina": "nina2", "dia": "dc", "inici": "18:00", "fi": "18:16", "nom": "Ciencia", "recollida": true},
+    {"nina": "nina2", "dia": "dj", "inici": "17:00", "fi": "18:30", "nom": "Piscina", "recollida": true}
+  ],
+  "preferencies": {
+    "rotacio": "setmanal",
+    "caps_de_setmana": "Dissabte tasques en familia (dos adults) i un adult descansa; Diumenge lliure/familia.",
+    "idioma": "ca",
+    "menu_actiu": true,
+    "punts_actius": true
+  }
+}
