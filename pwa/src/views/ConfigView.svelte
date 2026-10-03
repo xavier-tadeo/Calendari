@@ -2,16 +2,24 @@
   import { app } from '../lib/state.svelte.js'
   import { DIES, DIES_NOM } from '../lib/dates.js'
   import { adults, nens } from '../lib/config.js'
-  import { resumAvisos } from '../lib/tasques.js'
+  import { resumAvisos, plaTasques, actualitzaPla } from '../lib/tasques.js'
+  import { PESOS } from '../lib/biblioteca.js'
   import { signOut } from '../lib/auth.svelte.js'
   import { hasSupabase } from '../lib/supabase.js'
   import { PALETA, nomColor } from '../lib/esdeveniments.js'
   import { saveConfig } from '../lib/load.js'
 
   const avisos = $derived(resumAvisos(app.config))
+  const tasques = $derived(plaTasques(app.config))
+  const PES_OPCIONS = [1, 2, 3]
 
   async function setColor(membre, c) {
     membre.color = c
+    await saveConfig()
+  }
+
+  async function setPes(tasca, pes) {
+    actualitzaPla(app.config, tasca.id, { pes })
     await saveConfig()
   }
 </script>
@@ -90,6 +98,32 @@
   {/each}
 </div>
 
+<div class="targeta" style="margin-bottom: 10px">
+  <strong>Esforç de les tasques</strong>
+  <p class="suau" style="margin: 4px 0 8px">
+    El pes (1 lleugera · 2 mitjana · 3 feixuga) decideix com es reparteixen perquè la càrrega sigui justa.
+  </p>
+  {#each tasques as t (t.id)}
+    <div class="fila-pes">
+      <span class="nom-tasca">{t.nom}</span>
+      <div class="pes-xips">
+        {#each PES_OPCIONS as p (p)}
+          <button
+            class="pes-xip"
+            class:sel={(t.pes ?? 2) === p}
+            onclick={() => setPes(t, p)}
+            title={PESOS[p]}
+            aria-label={PESOS[p]}
+            type="button"
+          >
+            {p}
+          </button>
+        {/each}
+      </div>
+    </div>
+  {/each}
+</div>
+
 <div class="targeta">
   <div class="fila espai">
     <span class="suau">{hasSupabase ? 'Connectat al nuvol' : 'Mode local'}</span>
@@ -114,5 +148,40 @@
   }
   .mostra.sel {
     border-color: var(--text);
+  }
+  .fila-pes {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    border-top: 1px solid var(--linia);
+  }
+  .nom-tasca {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 13px;
+  }
+  .pes-xips {
+    display: flex;
+    gap: 4px;
+    flex: none;
+  }
+  .pes-xip {
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    background: #fff;
+    border: 1px solid var(--linia);
+    color: var(--suau);
+    font-weight: 700;
+    font-size: 12px;
+  }
+  .pes-xip.sel {
+    background: var(--primari-suau);
+    border-color: var(--primari);
+    color: var(--primari);
   }
 </style>

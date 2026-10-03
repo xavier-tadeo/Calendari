@@ -163,6 +163,15 @@ await page.waitForTimeout(400)
 const cfg = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:config') || '{}'))
 log(cfg?.familia?.adults?.[0]?.color === '#d62728', 'config: desa el color')
 
+// --- Esforç de les tasques a Configuracio ---
+text = await page.evaluate(() => document.body.innerText)
+log(text.includes('Esforç de les tasques'), 'config: secció d’esforç de tasques')
+log((await page.locator('.fila-pes').count()) > 0, 'config: llista tasques amb pes')
+await page.locator('.fila-pes').first().locator('.pes-xip').nth(2).click()
+await page.waitForTimeout(400)
+const cfgPes = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:config') || '{}'))
+log((cfgPes.tasques || [])[0]?.pes === 3, 'config: desa el pes de la tasca')
+
 await browser.close()
 console.log('--- ERRORS JS ---')
 console.log(errors.length ? errors.join('\n') : 'cap')
