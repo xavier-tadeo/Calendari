@@ -112,6 +112,17 @@ log(
 )
 log((await page.locator('.opcio').count()) === 0, 'calendari: tanca opcions en triar')
 
+// --- Color dels membres ---
+await page.mouse.click(8, 8)
+await page.waitForTimeout(300)
+await page.getByText('Config', { exact: true }).first().click()
+await page.waitForTimeout(400)
+log((await page.locator('.mostra').count()) > 0, 'config: selector de color')
+await page.locator('.mostra').nth(1).click()
+await page.waitForTimeout(400)
+const cfg = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:config') || '{}'))
+log(cfg?.familia?.adults?.[0]?.color === '#d62728', 'config: desa el color')
+
 await browser.close()
 console.log('--- ERRORS JS ---')
 console.log(errors.length ? errors.join('\n') : 'cap')
