@@ -93,6 +93,25 @@ await page.waitForTimeout(400)
 text = await page.evaluate(() => document.body.innerText)
 log(text.includes('Tasca smoke'), 'setmana: afegeix tasca puntual')
 
+// --- Reassignació ràpida des del calendari ---
+await page.getByText('Calendari', { exact: true }).first().click()
+await page.waitForTimeout(400)
+await page.locator('.cella:has(.avui-num)').first().click()
+await page.waitForTimeout(400)
+const qui = page.locator('.qui').first()
+log((await qui.count()) > 0, 'calendari: botó de persona a les tasques')
+await qui.click()
+await page.waitForTimeout(200)
+log((await page.locator('.opcio').count()) > 0, 'calendari: desplega opcions de persona')
+await page.locator('.opcio').nth(1).click()
+await page.waitForTimeout(400)
+const sm2 = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:setmanes') || '{}'))
+log(
+  Object.values(sm2).some((w) => Object.keys(w.assignat || {}).length > 0),
+  'calendari: desa la nova persona',
+)
+log((await page.locator('.opcio').count()) === 0, 'calendari: tanca opcions en triar')
+
 await browser.close()
 console.log('--- ERRORS JS ---')
 console.log(errors.length ? errors.join('\n') : 'cap')

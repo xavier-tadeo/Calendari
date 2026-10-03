@@ -1,12 +1,25 @@
 <script>
   import { DIES_NOM, pyWeekday, MESOS_NOM } from '../lib/dates.js'
+  import { app } from '../lib/state.svelte.js'
+  import { adults } from '../lib/config.js'
+  import { assigna } from '../lib/setmanes.js'
+  import { saveSetmanes } from '../lib/load.js'
 
   let { dia, diaKey, esd, tasques, extra, colors, noms, fest, onclose, oneditar, onesborrar, onafegir } =
     $props()
 
+  const opcions = $derived([{ id: 'familia', nom: 'Familia' }, ...adults(app.config)])
+  let qui = $state(null)
+
   const titolDia = $derived(
     `${DIES_NOM[diaKey]}, ${dia.getDate()} de ${MESOS_NOM[dia.getMonth()].toLowerCase()}`,
   )
+
+  async function tria(key, id) {
+    assigna(app.setmanes, dia, key, id)
+    qui = null
+    await saveSetmanes()
+  }
 
   function hora(ev) {
     if (ev.tot_el_dia !== false) return 'Tot el dia'
@@ -72,13 +85,35 @@
       <p class="suau">Cap tasca.</p>
     {:else}
       {#each tasques as t (t.key)}
-        <div class="targeta fila" style="margin-bottom: 6px; gap: 10px">
-          <span class="punt" style="background: {colors[t.assignat] || '#888'}"></span>
-          <span style="flex: 1" class:fet={t.fet}>
-            {t.nom}{#if t.custom} <span class="suau">· extra</span>{/if}
-          </span>
-          <span class="suau">{noms[t.assignat] ?? t.assignat}</span>
-          {#if t.fet}<span class="suau">✓</span>{/if}
+        <div class="targeta" style="margin-bottom: 6px">
+          <div class="fila" style="gap: 10px">
+            <span class="punt" style="background: {colors[t.assignat] || '#888'}"></span>
+            <span style="flex: 1" class:fet={t.fet}>
+              {t.nom}{#if t.custom} <span class="suau">· extra</span>{/if}
+            </span>
+            {#if t.fet}<span class="suau">✓</span>{/if}
+            <button
+              class="qui"
+              class:obert={qui === t.key}
+              onclick={() => (qui = qui === t.key ? null : t.key)}
+            >
+              {noms[t.assignat] ?? t.assignat}
+            </button>
+          </div>
+          {#if qui === t.key}
+            <div class="opcions">
+              {#each opcions as o (o.id)}
+                <button
+                  class="opcio"
+                  class:actiu={t.assignat === o.id}
+                  onclick={() => tria(t.key, o.id)}
+                >
+                  <span class="punt" style="background: {colors[o.id] || '#9aa4b8'}"></span>
+                  {o.nom}
+                </button>
+              {/each}
+            </div>
+          {/if}
         </div>
       {/each}
     {/if}
@@ -100,5 +135,42 @@
   .fet {
     text-decoration: line-through;
     color: var(--suau);
+  }
+  .qui {
+    flex: none;
+    padding: 3px 10px;
+    border-radius: 999px;
+    border: 1px solid var(--linia);
+    background: #fff;
+    color: var(--suau);
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .qui.obert {
+    background: var(--primari-suau);
+    border-color: var(--primari);
+    color: var(--primari);
+  }
+  .opcions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .opcio {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 11px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--linia);
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .opcio.actiu {
+    background: var(--primari-suau);
+    border-color: var(--primari);
+    color: var(--primari);
   }
 </style>
