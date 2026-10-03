@@ -11,18 +11,20 @@
     setmanaKey,
   } from '../lib/dates.js'
   import { colorsMembres, adults } from '../lib/config.js'
-  import { tasquesSetmana, plaTasques, grupsDelDia } from '../lib/tasques.js'
+  import { tasquesSetmana, plaTasques, grupsDelDia, balancSetmana } from '../lib/tasques.js'
   import { toggleFet } from '../lib/setmanes.js'
   import { saveSetmanes } from '../lib/load.js'
   import TaskSheet from '../components/TaskSheet.svelte'
   import TaskForm from '../components/TaskForm.svelte'
   import NotaSheet from '../components/NotaSheet.svelte'
+  import BibliotecaSheet from '../components/BibliotecaSheet.svelte'
 
   let ref = $state(todayISO())
   const refDate = $derived(parseISO(ref))
   const dies = $derived(diesSetmana(refDate))
   const week = $derived(setmanaKey(refDate))
   const instancies = $derived(tasquesSetmana(app.config, app.setmanes, refDate))
+  const balanc = $derived(balancSetmana(app.config, app.setmanes, refDate))
   const colors = $derived(colorsMembres(app.config))
   const noms = $derived(Object.fromEntries(adults(app.config).map((m) => [m.id, m.nom])))
   const notes = $derived(app.setmanes[week]?.notes ?? {})
@@ -30,6 +32,7 @@
   let sheetInst = $state(null)
   let form = $state(null)
   let nota = $state(null)
+  let bib = $state(false)
 
   function mou(n) {
     ref = iso(addDies(refDate, n * 7))
@@ -82,6 +85,25 @@
     <div class="suau">{nomSetmana}</div>
   </div>
   <button class="boto ghost" onclick={() => mou(1)} aria-label="Setmana seguent">›</button>
+</div>
+
+<div class="targeta repartiment">
+  <div class="fila espai" style="margin-bottom: 6px">
+    <strong>Repartiment de la setmana</strong>
+    <span class="suau">{balanc.total.fet}/{balanc.total.count} fetes · {balanc.total.pes} pts</span>
+  </div>
+  {#each balanc.adults as a (a.id)}
+    <div class="carrega">
+      <span class="qui-nom">{a.nom}</span>
+      <div class="barra">
+        <div class="farcit" style="width: {Math.round((a.pes / balanc.maxPes) * 100)}%; background: {a.color}"></div>
+      </div>
+      <span class="pts">{a.count} · {a.pes} pts</span>
+    </div>
+  {/each}
+  <button class="boto ghost" style="width: 100%; margin-top: 8px" onclick={() => (bib = true)}>
+    📚 Afegir de la biblioteca
+  </button>
 </div>
 
 {#each DIES as d (d)}
@@ -151,6 +173,10 @@
 
 {#if nota}
   <NotaSheet diaKey={nota.diaKey} valor={nota.valor} {refDate} onclose={() => (nota = null)} />
+{/if}
+
+{#if bib}
+  <BibliotecaSheet onclose={() => (bib = false)} />
 {/if}
 
 <style>
@@ -236,5 +262,42 @@
   }
   .accions-dia .boto {
     padding: 7px 12px;
+  }
+  .repartiment {
+    margin-bottom: 12px;
+  }
+  .carrega {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 2px 0;
+  }
+  .qui-nom {
+    flex: none;
+    width: 62px;
+    font-size: 12px;
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .barra {
+    flex: 1;
+    height: 10px;
+    background: #eee;
+    border-radius: 999px;
+    overflow: hidden;
+  }
+  .farcit {
+    height: 100%;
+    border-radius: 999px;
+    min-width: 2px;
+  }
+  .pts {
+    flex: none;
+    font-size: 11px;
+    color: var(--suau);
+    min-width: 52px;
+    text-align: right;
   }
 </style>

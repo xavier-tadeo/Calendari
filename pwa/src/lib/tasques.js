@@ -3,17 +3,17 @@ import { diesSetmana, setmanaKey, iso, pyWeekday, DIES } from './dates.js'
 import { esFestiu, festiu } from './festius.js'
 
 export const TASQUES_DEFAULT = [
-  { id: 'super', nom: 'Comprar al super', dies: ['ds'], tipus: 'rotatiu', hora: '11:00' },
-  { id: 'esmorzars', nom: 'Preparar els esmorzars', dies: ['dl', 'dt', 'dc', 'dj', 'dv'], tipus: 'rotatiu', hora: '07:30' },
-  { id: 'sopars', nom: 'Cuinar el sopar', dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'], tipus: 'rotatiu', hora: '20:00' },
-  { id: 'portar_cole', nom: "Portar les nenes a l'escola", dies: ['dl', 'dt', 'dc', 'dj', 'dv'], tipus: 'escola', hora: '08:45' },
-  { id: 'recollir_cole', nom: "Recollir les nenes de l'escola", dies: ['dl', 'dt', 'dc', 'dj', 'dv'], tipus: 'escola', hora: '17:00' },
-  { id: 'dormir', nom: 'Posar les nenes a dormir', dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'], tipus: 'rotatiu', hora: '21:00' },
-  { id: 'roba', nom: 'Rentar i plegar la roba', dies: ['dl', 'dj', 'ds'], tipus: 'rotatiu', hora: '19:30' },
-  { id: 'neteja', nom: 'Netejar banys i cuina', dies: ['ds'], tipus: 'familia', hora: '10:00' },
-  { id: 'brossa', nom: 'Treure la brossa i reciclatge', dies: ['dl', 'dj'], tipus: 'rotatiu', hora: '21:15' },
-  { id: 'deures', nom: 'Deures / estudi amb les nenes', dies: ['dl', 'dt', 'dc', 'dj'], tipus: 'rotatiu', hora: '17:30' },
-  { id: 'mascota', nom: 'Cuidar la mascota', dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'], tipus: 'rotatiu', hora: '20:30' },
+  { id: 'super', nom: 'Comprar al super', dies: ['ds'], tipus: 'rotatiu', hora: '11:00', pes: 2 },
+  { id: 'esmorzars', nom: 'Preparar els esmorzars', dies: ['dl', 'dt', 'dc', 'dj', 'dv'], tipus: 'rotatiu', hora: '07:30', pes: 1 },
+  { id: 'sopars', nom: 'Cuinar el sopar', dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'], tipus: 'rotatiu', hora: '20:00', pes: 2 },
+  { id: 'portar_cole', nom: "Portar les nenes a l'escola", dies: ['dl', 'dt', 'dc', 'dj', 'dv'], tipus: 'escola', hora: '08:45', pes: 1 },
+  { id: 'recollir_cole', nom: "Recollir les nenes de l'escola", dies: ['dl', 'dt', 'dc', 'dj', 'dv'], tipus: 'escola', hora: '17:00', pes: 1 },
+  { id: 'dormir', nom: 'Posar les nenes a dormir', dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'], tipus: 'rotatiu', hora: '21:00', pes: 1 },
+  { id: 'roba', nom: 'Rentar i plegar la roba', dies: ['dl', 'dj', 'ds'], tipus: 'rotatiu', hora: '19:30', pes: 2 },
+  { id: 'neteja', nom: 'Netejar banys i cuina', dies: ['ds'], tipus: 'familia', hora: '10:00', pes: 3 },
+  { id: 'brossa', nom: 'Treure la brossa i reciclatge', dies: ['dl', 'dj'], tipus: 'rotatiu', hora: '21:15', pes: 1 },
+  { id: 'deures', nom: 'Deures / estudi amb les nenes', dies: ['dl', 'dt', 'dc', 'dj'], tipus: 'rotatiu', hora: '17:30', pes: 2 },
+  { id: 'mascota', nom: 'Cuidar la mascota', dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'], tipus: 'rotatiu', hora: '20:30', pes: 1 },
 ]
 
 export const BLOCS = [
@@ -70,8 +70,6 @@ export const TASQUES_NENES = [
   { id: 'dents', nom: "Rentar-se les dents", punts: 1, dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'] },
 ]
 
-const HORA_ENTRADA = '08:45'
-const HORA_SORTIDA = '17:00'
 const SALTA_FESTIU = ['portar_cole', 'recollir_cole', 'deures']
 
 function minuts(hhmm) {
@@ -89,16 +87,31 @@ export function disponible(adult, dia, hora) {
   return !dins(h.fora, hora)
 }
 
-function ownerRotatiu(list, week, idx) {
-  if (!list.length) return 'familia'
-  const num = parseInt(week.split('-W')[1], 10)
-  return list[(num + idx) % list.length].id
+export function setmanaNum(dia) {
+  return parseInt(setmanaKey(dia).split('-W')[1], 10)
 }
 
-function assignaEscola(list, dia, hora, nAss) {
+// freq: 'setmanal' (per defecte) | 'quinzenal' (paritat 0=parell, 1=senar) | 'mensual' (dia_mes 1-28)
+export function tocaSetmana(t, dia) {
+  const freq = t.freq ?? 'setmanal'
+  if (freq === 'quinzenal') return setmanaNum(dia) % 2 === (t.paritat ?? 0)
+  return freq !== 'mensual'
+}
+
+function ownerRotatiu(list, week, idx, dia, hora, carrega) {
+  if (!list.length) return 'familia'
+  const disponibles = hora ? list.filter((a) => disponible(a, dia, hora)) : list
+  const pool = disponibles.length ? disponibles : list
+  const min = Math.min(...pool.map((a) => carrega[a.id] ?? 0))
+  const candidats = pool.filter((a) => (carrega[a.id] ?? 0) === min)
+  const num = parseInt(week.split('-W')[1], 10)
+  return candidats[(num + idx) % candidats.length].id
+}
+
+function assignaEscola(list, dia, hora, carrega) {
   const lliures = list.filter((a) => disponible(a, dia, hora)).map((a) => a.id)
   if (!lliures.length) return [list[0]?.id ?? 'familia', false]
-  lliures.sort((a, b) => (nAss[a] ?? 0) - (nAss[b] ?? 0))
+  lliures.sort((a, b) => (carrega[a] ?? 0) - (carrega[b] ?? 0))
   return [lliures[0], true]
 }
 
@@ -106,8 +119,14 @@ function assignaEscola(list, dia, hora, nAss) {
 
 export function plaTasques(cfg) {
   const base = cfg?.tasques && cfg.tasques.length ? cfg.tasques : TASQUES_DEFAULT
-  const perId = Object.fromEntries(TASQUES_DEFAULT.map((t) => [t.id, t.hora]))
-  return base.map((t) => (t.hora === undefined && perId[t.id] ? { ...t, hora: perId[t.id] } : t))
+  const perHora = Object.fromEntries(TASQUES_DEFAULT.map((t) => [t.id, t.hora]))
+  const perPes = Object.fromEntries(TASQUES_DEFAULT.map((t) => [t.id, t.pes]))
+  return base.map((t) => ({
+    pes: 2,
+    ...t,
+    ...(t.hora === undefined && perHora[t.id] ? { hora: perHora[t.id] } : {}),
+    ...(t.pes === undefined && perPes[t.id] ? { pes: perPes[t.id] } : {}),
+  }))
 }
 
 export function asseguraPla(cfg) {
@@ -145,48 +164,58 @@ export function generaPla(cfg, dia) {
   const week = setmanaKey(dia)
   const dies = diesSetmana(dia)
   const out = []
-  const nAss = Object.fromEntries(adultsList.map((a) => [a.id, 0]))
+  const carrega = Object.fromEntries(adultsList.map((a) => [a.id, 0]))
+
+  function afegeixInstancia(t, d, idx) {
+    const dataDia = dies[d]
+    if (!dataDia) return
+    if (esFestiu(dataDia) && (SALTA_FESTIU.includes(t.id) || t.tipus === 'escola')) return
+    const pes = t.pes ?? 2
+    let hora = t.hora ?? null
+    if (t.id === 'portar_cole' && cfg?.cole?.entrada) hora = cfg.cole.entrada
+    if (t.id === 'recollir_cole' && cfg?.cole?.sortida) hora = cfg.cole.sortida
+    let assignat = 'familia'
+    let nota = ''
+    if (t.fix) {
+      assignat = t.fix
+    } else if (t.tipus === 'escola') {
+      const [a, ok] = assignaEscola(adultsList, d, hora, carrega)
+      assignat = a
+      nota = ok ? '' : 'Cal organitzar-se (ningú lliure en aquesta hora)'
+    } else if (t.tipus === 'familia') {
+      assignat = 'familia'
+      nota = 'Ho feu tots dos junts'
+    } else {
+      assignat = ownerRotatiu(adultsList, week, idx, d, hora, carrega)
+    }
+    if (carrega[assignat] !== undefined) carrega[assignat] += pes
+    const f = festiu(dataDia)
+    out.push({
+      key: instanciaKey(t.id, d),
+      task_id: t.id,
+      nom: t.nom,
+      dia: d,
+      data: iso(dataDia),
+      hora,
+      assignat,
+      tipus: t.tipus,
+      pes,
+      nota,
+      festiu: f ? f.nom : null,
+      fet: false,
+      custom: false,
+    })
+  }
 
   plan.forEach((t, idx) => {
-    for (const d of t.dies ?? []) {
-      const dataDia = dies[d]
-      if (!dataDia) continue
-      if (esFestiu(dataDia) && SALTA_FESTIU.includes(t.id)) continue
-      let assignat = 'familia'
-      let nota = ''
-      if (t.fix) {
-        assignat = t.fix
-      } else if (t.tipus === 'escola') {
-        const hora = t.id === 'portar_cole' ? HORA_ENTRADA : HORA_SORTIDA
-        const [a, ok] = assignaEscola(adultsList, d, hora, nAss)
-        assignat = a
-        nAss[assignat] = (nAss[assignat] ?? 0) + 1
-        nota = ok ? '' : 'Cal organitzar-se (ningú lliure en aquesta hora)'
-      } else if (t.tipus === 'familia') {
-        assignat = 'familia'
-        nota = 'Ho feu tots dos junts'
-      } else {
-        assignat = ownerRotatiu(adultsList, week, idx)
-      }
-      const f = festiu(dataDia)
-      let hora = t.hora ?? null
-      if (t.id === 'portar_cole' && cfg?.cole?.entrada) hora = cfg.cole.entrada
-      if (t.id === 'recollir_cole' && cfg?.cole?.sortida) hora = cfg.cole.sortida
-      out.push({
-        key: instanciaKey(t.id, d),
-        task_id: t.id,
-        nom: t.nom,
-        dia: d,
-        data: iso(dataDia),
-        hora,
-        assignat,
-        tipus: t.tipus,
-        nota,
-        festiu: f ? f.nom : null,
-        fet: false,
-        custom: false,
-      })
+    const freq = t.freq ?? 'setmanal'
+    if (freq === 'mensual') {
+      const d = DIES.find((x) => dies[x]?.getDate() === t.dia_mes)
+      if (d) afegeixInstancia(t, d, idx)
+      return
     }
+    if (!tocaSetmana(t, dia)) return
+    for (const d of t.dies ?? []) afegeixInstancia(t, d, idx)
   })
   return out
 }
@@ -207,6 +236,7 @@ export function tasquesSetmana(cfg, setmanes, dia) {
         hora: c.hora ?? null,
         assignat: c.assignat || 'familia',
         tipus: 'custom',
+        pes: c.pes ?? 2,
         nota: c.nota ?? '',
         festiu: null,
         fet: false,
@@ -230,6 +260,31 @@ export function tasquesSetmana(cfg, setmanes, dia) {
 export function tasquesDelDia(cfg, setmanes, diaDate) {
   const diaKey = DIES[pyWeekday(diaDate)]
   return tasquesSetmana(cfg, setmanes, diaDate).filter((t) => t.dia === diaKey)
+}
+
+// Repartiment de carrega de la setmana (compte + pes d'esforc)
+export function balancSetmana(cfg, setmanes, diaDate) {
+  const adultsList = adults(cfg)
+  const inst = tasquesSetmana(cfg, setmanes, diaDate)
+  const per = Object.fromEntries(
+    adultsList.map((a) => [a.id, { id: a.id, nom: a.nom, color: a.color, count: 0, pes: 0, fet: 0 }]),
+  )
+  const total = { count: 0, pes: 0, fet: 0 }
+  for (const t of inst) {
+    const pes = t.pes ?? 2
+    total.count++
+    total.pes += pes
+    if (t.fet) total.fet++
+    const a = per[t.assignat]
+    if (a) {
+      a.count++
+      a.pes += pes
+      if (t.fet) a.fet++
+    }
+  }
+  const adultsBalanc = adultsList.map((a) => per[a.id])
+  const maxPes = Math.max(1, ...adultsBalanc.map((a) => a.pes))
+  return { adults: adultsBalanc, total, maxPes }
 }
 
 // --- Avisos ---

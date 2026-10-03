@@ -99,6 +99,40 @@ await page.waitForTimeout(400)
 text = await page.evaluate(() => document.body.innerText)
 log(text.includes('Tasca smoke'), 'setmana: afegeix tasca puntual')
 
+// --- Repartiment i biblioteca ---
+log((await page.locator('.carrega').count()) >= 2, 'setmana: barres de repartiment per adult')
+log(text.includes('Repartiment de la setmana'), 'setmana: resum de repartiment')
+
+await page.getByText('Afegir de la biblioteca').click()
+await page.waitForTimeout(400)
+text = await page.evaluate(() => document.body.innerText)
+log(text.includes('Biblioteca de tasques'), 'biblioteca: s’obre')
+log((await page.locator('.item').count()) > 0, 'biblioteca: llista tasques de la categoria')
+await page.locator('.item .boto', { hasText: 'Afegir' }).first().click()
+await page.waitForTimeout(400)
+const cfgBib = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:config') || '{}'))
+log(
+  (cfgBib.tasques || []).some((t) => String(t.id).startsWith('b_')),
+  'biblioteca: desa tasca al pla',
+)
+log(
+  (await page.locator('.item .boto', { hasText: 'Traure' }).count()) > 0,
+  'biblioteca: marca la tasca com afegida',
+)
+await page.locator('.full .boto.ghost', { hasText: '✕' }).first().click()
+await page.waitForTimeout(300)
+
+// --- Recurrència al formulari ---
+await page.getByText('＋ Tasca').first().click()
+await page.waitForTimeout(300)
+text = await page.evaluate(() => document.body.innerText)
+log(text.includes('Repetició'), 'formulari: selector de repetició')
+await page.getByText('Un cop al mes').click()
+await page.waitForTimeout(200)
+log((await page.locator('#tasca-dia-mes').count()) === 1, 'formulari: camp dia del mes')
+await page.getByText('Cancel·lar').click()
+await page.waitForTimeout(300)
+
 // --- Reassignació ràpida des del calendari ---
 await page.getByText('Calendari', { exact: true }).first().click()
 await page.waitForTimeout(400)
