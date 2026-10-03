@@ -41,7 +41,7 @@
 
 <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
 <div class="overlay" onclick={onclose} role="presentation">
-  <div class="full" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+  <div class="full" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
     <div class="fila espai" style="margin-bottom:6px">
       <h2 class="titol">{ev?.id ? 'Editar esdeveniment' : 'Nou esdeveniment'}</h2>
       <button class="boto ghost" onclick={onclose}>✕</button>

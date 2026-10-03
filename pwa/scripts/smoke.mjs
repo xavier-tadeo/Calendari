@@ -42,6 +42,9 @@ log((guardat.esdeveniments || []).some((e) => e.titol === 'Prova smoke'), 'persi
 
 await page.mouse.click(8, 8)
 await page.waitForTimeout(300)
+text = await page.evaluate(() => document.body.innerText)
+log(text.includes('Prova smoke'), 'text del event a la graella')
+log((await page.locator('.titol-ev').count()) >= 1, 'xip de text .titol-ev present')
 
 for (const pestanya of ['Setmana', 'Menú', 'Punts', 'Config']) {
   await page.getByText(pestanya, { exact: true }).first().click()

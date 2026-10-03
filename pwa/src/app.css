@@ -51,6 +51,7 @@ textarea {
   margin: 0 auto;
   padding: max(12px, env(safe-area-inset-top)) 14px 84px;
   min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .centrat {

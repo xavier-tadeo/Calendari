@@ -93,53 +93,54 @@
   }
 </script>
 
-<div class="fila espai" style="margin-bottom: 10px">
-  <button class="boto ghost" onclick={() => canviaMes(-1)} aria-label="Mes anterior">‹</button>
-  <h1 class="titol">{nomMes(app.viewAny, app.viewMes)}</h1>
-  <button class="boto ghost" onclick={() => canviaMes(1)} aria-label="Mes seguent">›</button>
-</div>
+<div class="vista-calendari">
+  <div class="fila espai" style="margin-bottom: 10px">
+    <button class="boto ghost" onclick={() => canviaMes(-1)} aria-label="Mes anterior">‹</button>
+    <h1 class="titol">{nomMes(app.viewAny, app.viewMes)}</h1>
+    <button class="boto ghost" onclick={() => canviaMes(1)} aria-label="Mes seguent">›</button>
+  </div>
 
-<div class="capcalera-setmana">
-  {#each DIES as d (d)}
-    <span>{DIES_CURT[d]}</span>
-  {/each}
-</div>
-
-<div class="graella">
-  {#each files as setmana, si (si)}
-    {#each setmana as d, di (di)}
-      {#if d}
-        {@const isAvui = iso(d) === avui}
-        {@const isSel = iso(d) === app.dia}
-        {@const f = festiu(d)}
-        {@const evs = evsDelDia(d)}
-        <button
-          class="cella"
-          class:avui={isAvui}
-          class:sel={isSel}
-          class:festiu={Boolean(f)}
-          onclick={() => selecciona(d)}
-        >
-          <span class="numero" class:avui-num={isAvui}>{d.getDate()}</span>
-          <span class="marques">
-            {#each evs.slice(0, 3) as ev (ev.id)}
-              <span class="marca" style="background: {colorEv(ev)}"></span>
-            {/each}
-            {#if evs.length > 3}
-              <span class="mes">+{evs.length - 3}</span>
-            {/if}
-          </span>
-        </button>
-      {:else}
-        <span class="cella buit"></span>
-      {/if}
+  <div class="capcalera-setmana">
+    {#each DIES as d (d)}
+      <span>{DIES_CURT[d]}</span>
     {/each}
-  {/each}
-</div>
+  </div>
 
-<p class="suau" style="margin-top: 10px; text-align: center">
-  Toca un dia per veure el resum i afegir esdeveniments.
-</p>
+  <div class="graella">
+    {#each files as setmana, si (si)}
+      {#each setmana as d, di (di)}
+        {#if d}
+          {@const isAvui = iso(d) === avui}
+          {@const isSel = iso(d) === app.dia}
+          {@const f = festiu(d)}
+          {@const evs = evsDelDia(d)}
+          <button
+            class="cella"
+            class:avui={isAvui}
+            class:sel={isSel}
+            class:festiu={Boolean(f)}
+            onclick={() => selecciona(d)}
+          >
+            <span class="numero" class:avui-num={isAvui}>{d.getDate()}</span>
+            <span class="llista">
+              {#each evs.slice(0, 2) as ev (ev.id)}
+                <span class="esd" style="--c: {colorEv(ev)}" title={ev.titol}>
+                  <span class="punt-ev"></span>
+                  <span class="titol-ev">{ev.titol}</span>
+                </span>
+              {/each}
+              {#if evs.length > 2}
+                <span class="mes">+{evs.length - 2}</span>
+              {/if}
+            </span>
+          </button>
+        {:else}
+          <span class="cella buit"></span>
+        {/if}
+      {/each}
+    {/each}
+  </div>
+</div>
 
 {#if mostra}
   <DaySheet
@@ -163,6 +164,12 @@
 {/if}
 
 <style>
+  .vista-calendari {
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 150px);
+    min-height: calc(100dvh - 150px);
+  }
   .capcalera-setmana {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
@@ -170,23 +177,27 @@
     font-size: 11px;
     font-weight: 700;
     color: var(--suau);
-    margin-bottom: 4px;
+    margin-bottom: 5px;
   }
   .graella {
+    flex: 1;
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 4px;
+    grid-auto-rows: minmax(72px, 1fr);
+    gap: 5px;
   }
   .cella {
     position: relative;
-    height: 62px;
+    height: 100%;
+    min-height: 72px;
     background: var(--targeta);
     border-radius: 10px;
     box-shadow: var(--ombra);
     display: flex;
     flex-direction: column;
-    align-items: center;
-    padding: 5px 2px 3px;
+    align-items: stretch;
+    text-align: left;
+    padding: 4px 5px;
     overflow: hidden;
   }
   .cella.buit {
@@ -194,10 +205,11 @@
     box-shadow: none;
   }
   .numero {
-    font-size: 14px;
+    font-size: 15px;
     font-weight: 600;
     width: 22px;
     height: 22px;
+    flex: none;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -217,22 +229,39 @@
     outline: 2px solid var(--primari);
     outline-offset: -2px;
   }
-  .marques {
+  .llista {
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 2px;
-    margin-top: 3px;
+    margin-top: 2px;
     width: 100%;
+    overflow: hidden;
   }
-  .marca {
-    width: 78%;
-    height: 4px;
-    border-radius: 2px;
+  .esd {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
+  }
+  .punt-ev {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--c);
+    flex: none;
+  }
+  .titol-ev {
+    font-size: 10.5px;
+    line-height: 1.25;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .mes {
     font-size: 9px;
     color: var(--suau);
     font-weight: 700;
+    padding-left: 9px;
   }
 </style>
