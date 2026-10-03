@@ -3,6 +3,7 @@
   import { app } from '../lib/state.svelte.js'
   import { adults } from '../lib/config.js'
   import { assigna } from '../lib/setmanes.js'
+  import { grupsDelDia } from '../lib/tasques.js'
   import { saveSetmanes } from '../lib/load.js'
 
   let { dia, diaKey, esd, tasques, extra, colors, noms, fest, onclose, oneditar, onesborrar, onafegir } =
@@ -84,36 +85,42 @@
     {#if tasques.length === 0}
       <p class="suau">Cap tasca.</p>
     {:else}
-      {#each tasques as t (t.key)}
-        <div class="targeta" style="margin-bottom: 6px">
-          <div class="fila" style="gap: 10px">
-            <span class="punt" style="background: {colors[t.assignat] || '#888'}"></span>
-            <span style="flex: 1" class:fet={t.fet}>
-              {t.nom}{#if t.custom} <span class="suau">· extra</span>{/if}
-            </span>
-            {#if t.fet}<span class="suau">✓</span>{/if}
-            <button
-              class="qui"
-              class:obert={qui === t.key}
-              onclick={() => (qui = qui === t.key ? null : t.key)}
-            >
-              {noms[t.assignat] ?? t.assignat}
-            </button>
-          </div>
-          {#if qui === t.key}
-            <div class="opcions">
-              {#each opcions as o (o.id)}
+      {#each grupsDelDia(tasques) as g (g.id)}
+        <div class="bloc" style="background: {g.color}">
+          <span class="bloc-nom">{g.nom}</span>
+          {#each g.tasques as t (t.key)}
+            <div class="targeta" style="margin-bottom: 6px">
+              <div class="fila" style="gap: 10px">
+                <span class="punt" style="background: {colors[t.assignat] || '#888'}"></span>
+                {#if t.hora}<span class="hora">{t.hora}</span>{/if}
+                <span style="flex: 1" class:fet={t.fet}>
+                  {t.nom}{#if t.custom} <span class="suau">· extra</span>{/if}
+                </span>
+                {#if t.fet}<span class="suau">✓</span>{/if}
                 <button
-                  class="opcio"
-                  class:actiu={t.assignat === o.id}
-                  onclick={() => tria(t.key, o.id)}
+                  class="qui"
+                  class:obert={qui === t.key}
+                  onclick={() => (qui = qui === t.key ? null : t.key)}
                 >
-                  <span class="punt" style="background: {colors[o.id] || '#9aa4b8'}"></span>
-                  {o.nom}
+                  {noms[t.assignat] ?? t.assignat}
                 </button>
-              {/each}
+              </div>
+              {#if qui === t.key}
+                <div class="opcions">
+                  {#each opcions as o (o.id)}
+                    <button
+                      class="opcio"
+                      class:actiu={t.assignat === o.id}
+                      onclick={() => tria(t.key, o.id)}
+                    >
+                      <span class="punt" style="background: {colors[o.id] || '#9aa4b8'}"></span>
+                      {o.nom}
+                    </button>
+                  {/each}
+                </div>
+              {/if}
             </div>
-          {/if}
+          {/each}
         </div>
       {/each}
     {/if}
@@ -135,6 +142,27 @@
   .fet {
     text-decoration: line-through;
     color: var(--suau);
+  }
+  .bloc {
+    border-radius: 12px;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+  }
+  .bloc-nom {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #7a7a7a;
+    margin-bottom: 4px;
+  }
+  .hora {
+    flex: none;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    min-width: 33px;
   }
   .qui {
     flex: none;

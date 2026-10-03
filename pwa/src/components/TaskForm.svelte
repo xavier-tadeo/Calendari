@@ -10,6 +10,13 @@
 
   const adultsList = adults(app.config)
 
+  const ATAJOS_HORA = [
+    { nom: 'Matí', hora: '08:00' },
+    { nom: 'Migdia', hora: '13:00' },
+    { nom: 'Tarda', hora: '17:00' },
+    { nom: 'Nit', hora: '20:00' },
+  ]
+
   let nom = $state(tasca?.nom ?? '')
   let dies = $state(tasca?.dies ? [...tasca.dies] : dia ? [dia] : [])
   let assignat = $state(
@@ -22,6 +29,7 @@
           : 'rotatiu',
   )
   let permanent = $state(!custom)
+  let hora = $state(tasca?.hora ?? '')
 
   function alterna(d) {
     dies = dies.includes(d) ? dies.filter((x) => x !== d) : [...dies, d]
@@ -31,10 +39,15 @@
     if (!nom.trim() || dies.length === 0) return
     if (tasca) {
       if (custom) {
-        actualitzaCustom(app.setmanes, refDate, tasca.id, { nom: nom.trim(), dies, assignat })
+        actualitzaCustom(app.setmanes, refDate, tasca.id, {
+          nom: nom.trim(),
+          dies,
+          assignat,
+          hora: hora || null,
+        })
         await saveSetmanes()
       } else {
-        const canvis = { nom: nom.trim(), dies }
+        const canvis = { nom: nom.trim(), dies, hora: hora || null }
         if (assignat === 'familia') {
           canvis.tipus = 'familia'
           canvis.fix = null
@@ -49,7 +62,7 @@
         await saveConfig()
       }
     } else if (permanent) {
-      const nova = { id: 't' + Math.random().toString(16).slice(2, 9), nom: nom.trim(), dies, tipus: 'rotatiu', fix: null }
+      const nova = { id: 't' + Math.random().toString(16).slice(2, 9), nom: nom.trim(), dies, tipus: 'rotatiu', fix: null, hora: hora || null }
       if (assignat === 'familia') nova.tipus = 'familia'
       else if (assignat !== 'rotatiu') nova.fix = assignat
       afegeixPla(app.config, nova)
@@ -60,6 +73,7 @@
         nom: nom.trim(),
         dies,
         assignat,
+        hora: hora || null,
       })
       await saveSetmanes()
     }
@@ -97,6 +111,24 @@
         <option value={a.id}>{a.nom}</option>
       {/each}
     </select>
+
+    <label class="etiqueta" for="tasca-hora">Hora (aprox.)</label>
+    <div class="fila" style="gap: 6px; align-items: center">
+      <input id="tasca-hora" class="camp" type="time" bind:value={hora} style="flex: 1" />
+      <button class="boto ghost" onclick={() => (hora = '')} disabled={!hora}>Sense hora</button>
+    </div>
+    <div class="hores">
+      {#each ATAJOS_HORA as a (a.nom)}
+        <button
+          class="xip-hora"
+          class:actiu={hora === a.hora}
+          onclick={() => (hora = a.hora)}
+          type="button"
+        >
+          {a.nom}
+        </button>
+      {/each}
+    </div>
 
     {#if !tasca && !custom}
       <label class="fila" style="gap: 8px; margin-top: 14px; align-items: center">
@@ -136,6 +168,28 @@
     font-size: 12px;
   }
   .xip-dia.actiu {
+    background: var(--primari-suau);
+    border-color: var(--primari);
+    color: var(--primari);
+  }
+  .hores {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .xip-hora {
+    flex: 1;
+    min-width: 56px;
+    padding: 7px 0;
+    border-radius: 10px;
+    background: #fff;
+    border: 1px solid var(--linia);
+    color: var(--suau);
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .xip-hora.actiu {
     background: var(--primari-suau);
     border-color: var(--primari);
     color: var(--primari);

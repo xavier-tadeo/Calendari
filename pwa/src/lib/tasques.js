@@ -3,18 +3,64 @@ import { diesSetmana, setmanaKey, iso, pyWeekday, DIES } from './dates.js'
 import { esFestiu, festiu } from './festius.js'
 
 export const TASQUES_DEFAULT = [
-  { id: 'super', nom: 'Comprar al super', dies: ['ds'], tipus: 'rotatiu' },
-  { id: 'esmorzars', nom: 'Preparar els esmorzars', dies: ['dl', 'dt', 'dc', 'dj', 'dv'], tipus: 'rotatiu' },
-  { id: 'sopars', nom: 'Cuinar el sopar', dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'], tipus: 'rotatiu' },
-  { id: 'portar_cole', nom: "Portar les nenes a l'escola", dies: ['dl', 'dt', 'dc', 'dj', 'dv'], tipus: 'escola' },
-  { id: 'recollir_cole', nom: "Recollir les nenes de l'escola", dies: ['dl', 'dt', 'dc', 'dj', 'dv'], tipus: 'escola' },
-  { id: 'dormir', nom: 'Posar les nenes a dormir', dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'], tipus: 'rotatiu' },
-  { id: 'roba', nom: 'Rentar i plegar la roba', dies: ['dl', 'dj', 'ds'], tipus: 'rotatiu' },
-  { id: 'neteja', nom: 'Netejar banys i cuina', dies: ['ds'], tipus: 'familia' },
-  { id: 'brossa', nom: 'Treure la brossa i reciclatge', dies: ['dl', 'dj'], tipus: 'rotatiu' },
-  { id: 'deures', nom: 'Deures / estudi amb les nenes', dies: ['dl', 'dt', 'dc', 'dj'], tipus: 'rotatiu' },
-  { id: 'mascota', nom: 'Cuidar la mascota', dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'], tipus: 'rotatiu' },
+  { id: 'super', nom: 'Comprar al super', dies: ['ds'], tipus: 'rotatiu', hora: '11:00' },
+  { id: 'esmorzars', nom: 'Preparar els esmorzars', dies: ['dl', 'dt', 'dc', 'dj', 'dv'], tipus: 'rotatiu', hora: '07:30' },
+  { id: 'sopars', nom: 'Cuinar el sopar', dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'], tipus: 'rotatiu', hora: '20:00' },
+  { id: 'portar_cole', nom: "Portar les nenes a l'escola", dies: ['dl', 'dt', 'dc', 'dj', 'dv'], tipus: 'escola', hora: '08:45' },
+  { id: 'recollir_cole', nom: "Recollir les nenes de l'escola", dies: ['dl', 'dt', 'dc', 'dj', 'dv'], tipus: 'escola', hora: '17:00' },
+  { id: 'dormir', nom: 'Posar les nenes a dormir', dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'], tipus: 'rotatiu', hora: '21:00' },
+  { id: 'roba', nom: 'Rentar i plegar la roba', dies: ['dl', 'dj', 'ds'], tipus: 'rotatiu', hora: '19:30' },
+  { id: 'neteja', nom: 'Netejar banys i cuina', dies: ['ds'], tipus: 'familia', hora: '10:00' },
+  { id: 'brossa', nom: 'Treure la brossa i reciclatge', dies: ['dl', 'dj'], tipus: 'rotatiu', hora: '21:15' },
+  { id: 'deures', nom: 'Deures / estudi amb les nenes', dies: ['dl', 'dt', 'dc', 'dj'], tipus: 'rotatiu', hora: '17:30' },
+  { id: 'mascota', nom: 'Cuidar la mascota', dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'], tipus: 'rotatiu', hora: '20:30' },
 ]
+
+export const BLOCS = [
+  { id: 'mati', nom: 'Matí', color: '#fff8e1' },
+  { id: 'migdia', nom: 'Migdia', color: '#fff3e0' },
+  { id: 'tarda', nom: 'Tarda', color: '#e8f5e9' },
+  { id: 'nit', nom: 'Nit', color: '#eceff1' },
+]
+
+export function minut(hora) {
+  if (!hora) return null
+  const [h, m] = hora.split(':').map(Number)
+  if (Number.isNaN(h)) return null
+  return h * 60 + (m || 0)
+}
+
+export function blocDeHora(hora) {
+  const t = minut(hora)
+  if (t == null) return null
+  if (t >= 300 && t < 720) return 'mati'
+  if (t >= 720 && t < 900) return 'migdia'
+  if (t >= 900 && t < 1200) return 'tarda'
+  return 'nit'
+}
+
+export function ordenaHora(tasques) {
+  return [...tasques].sort((a, b) => {
+    const ha = minut(a.hora)
+    const hb = minut(b.hora)
+    if (ha == null && hb == null) return 0
+    if (ha == null) return 1
+    if (hb == null) return -1
+    return ha - hb
+  })
+}
+
+export function grupsDelDia(tasques) {
+  const ordenades = ordenaHora(tasques)
+  const out = []
+  for (const b of BLOCS) {
+    const list = ordenades.filter((t) => blocDeHora(t.hora) === b.id)
+    if (list.length) out.push({ ...b, tasques: list })
+  }
+  const sense = ordenades.filter((t) => !t.hora)
+  if (sense.length) out.push({ id: 'altres', nom: 'Sense hora', color: '#f4f4f5', tasques: sense })
+  return out
+}
 
 export const TASQUES_NENES = [
   { id: 'llit', nom: 'Fer el llit', punts: 2, dies: ['dl', 'dt', 'dc', 'dj', 'dv'] },
@@ -59,7 +105,9 @@ function assignaEscola(list, dia, hora, nAss) {
 // --- Pla habitual (config.tasques) ---
 
 export function plaTasques(cfg) {
-  return cfg?.tasques && cfg.tasques.length ? cfg.tasques : TASQUES_DEFAULT
+  const base = cfg?.tasques && cfg.tasques.length ? cfg.tasques : TASQUES_DEFAULT
+  const perId = Object.fromEntries(TASQUES_DEFAULT.map((t) => [t.id, t.hora]))
+  return base.map((t) => (t.hora === undefined && perId[t.id] ? { ...t, hora: perId[t.id] } : t))
 }
 
 export function asseguraPla(cfg) {
@@ -121,12 +169,16 @@ export function generaPla(cfg, dia) {
         assignat = ownerRotatiu(adultsList, week, idx)
       }
       const f = festiu(dataDia)
+      let hora = t.hora ?? null
+      if (t.id === 'portar_cole' && cfg?.cole?.entrada) hora = cfg.cole.entrada
+      if (t.id === 'recollir_cole' && cfg?.cole?.sortida) hora = cfg.cole.sortida
       out.push({
         key: instanciaKey(t.id, d),
         task_id: t.id,
         nom: t.nom,
         dia: d,
         data: iso(dataDia),
+        hora,
         assignat,
         tipus: t.tipus,
         nota,
@@ -152,6 +204,7 @@ export function tasquesSetmana(cfg, setmanes, dia) {
         nom: c.nom,
         dia: d,
         data: null,
+        hora: c.hora ?? null,
         assignat: c.assignat || 'familia',
         tipus: 'custom',
         nota: c.nota ?? '',

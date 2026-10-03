@@ -57,6 +57,12 @@ for (const pestanya of ['Setmana', 'Menú', 'Punts', 'Config']) {
 await page.getByText('Setmana', { exact: true }).first().click()
 await page.waitForTimeout(400)
 log((await page.locator('.tasca').count()) > 0, 'setmana: mostra tasques')
+log((await page.locator('.bloc-nom').count()) > 0, 'setmana: franges horàries')
+const hores = await page.locator('.bloc').first().locator('.hora').allInnerTexts()
+log(
+  hores.length >= 1 && hores.every((h, i) => i === 0 || hores[i - 1] <= h),
+  'setmana: tasques ordenades per hora',
+)
 
 await page.locator('.tasca .obre').first().click()
 await page.waitForTimeout(300)

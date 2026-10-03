@@ -11,7 +11,7 @@
     setmanaKey,
   } from '../lib/dates.js'
   import { colorsMembres, adults } from '../lib/config.js'
-  import { tasquesSetmana, plaTasques } from '../lib/tasques.js'
+  import { tasquesSetmana, plaTasques, grupsDelDia } from '../lib/tasques.js'
   import { toggleFet } from '../lib/setmanes.js'
   import { saveSetmanes } from '../lib/load.js'
   import TaskSheet from '../components/TaskSheet.svelte'
@@ -99,20 +99,26 @@
     {#if files.length === 0}
       <span class="suau">Sense tasques</span>
     {:else}
-      {#each files as t (t.key)}
-        <div class="tasca" class:fet={t.fet}>
-          <button
-            class="casella"
-            aria-label={t.fet ? 'Marcar com a pendent' : 'Marcar com a feta'}
-            onclick={() => toggle(t)}
-          >
-            {t.fet ? '✓' : ''}
-          </button>
-          <button class="obre" onclick={() => (sheetInst = t)}>
-            <span class="punt" style="background: {colors[t.assignat] || '#888'}"></span>
-            <span class="nom-t">{t.nom}</span>
-            <span class="suau">{noms[t.assignat] ?? t.assignat}</span>
-          </button>
+      {#each grupsDelDia(files) as g (g.id)}
+        <div class="bloc" style="background: {g.color}">
+          <span class="bloc-nom">{g.nom}</span>
+          {#each g.tasques as t (t.key)}
+            <div class="tasca" class:fet={t.fet}>
+              <button
+                class="casella"
+                aria-label={t.fet ? 'Marcar com a pendent' : 'Marcar com a feta'}
+                onclick={() => toggle(t)}
+              >
+                {t.fet ? '✓' : ''}
+              </button>
+              <button class="obre" onclick={() => (sheetInst = t)}>
+                <span class="punt" style="background: {colors[t.assignat] || '#888'}"></span>
+                {#if t.hora}<span class="hora">{t.hora}</span>{/if}
+                <span class="nom-t">{t.nom}</span>
+                <span class="suau">{noms[t.assignat] ?? t.assignat}</span>
+              </button>
+            </div>
+          {/each}
         </div>
       {/each}
     {/if}
@@ -148,6 +154,27 @@
 {/if}
 
 <style>
+  .bloc {
+    border-radius: 12px;
+    padding: 6px 8px;
+    margin-bottom: 6px;
+  }
+  .bloc-nom {
+    display: block;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #7a7a7a;
+    margin-bottom: 3px;
+  }
+  .hora {
+    flex: none;
+    font-size: 11px;
+    font-weight: 600;
+    color: #6b7280;
+    min-width: 33px;
+  }
   .tasca {
     display: flex;
     align-items: center;
