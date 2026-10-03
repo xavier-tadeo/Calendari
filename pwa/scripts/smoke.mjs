@@ -53,6 +53,46 @@ for (const pestanya of ['Setmana', 'Menú', 'Punts', 'Config']) {
   log(t.length > 20, `pestanya ${pestanya} renderitza`)
 }
 
+// --- Edició de la setmana ---
+await page.getByText('Setmana', { exact: true }).first().click()
+await page.waitForTimeout(400)
+log((await page.locator('.tasca').count()) > 0, 'setmana: mostra tasques')
+
+await page.locator('.tasca .obre').first().click()
+await page.waitForTimeout(300)
+text = await page.evaluate(() => document.body.innerText)
+log(text.includes('Qui ho fa'), 'setmana: fitxa de tasca')
+log(text.includes('Marcar com a feta'), 'setmana: acció marcar feta')
+
+await page.locator('.opcio').nth(1).click()
+await page.waitForTimeout(300)
+await page.getByText('Marcar com a feta').click()
+await page.waitForTimeout(400)
+const sm = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:setmanes') || '{}'))
+const weeks = Object.values(sm)
+log(weeks.some((w) => Object.keys(w.assignat || {}).length > 0), 'setmana: desa reasignació')
+log(weeks.some((w) => Object.keys(w.fet || {}).length > 0), 'setmana: desa "feta"')
+
+await page.mouse.click(8, 8)
+await page.waitForTimeout(300)
+
+await page.getByText('＋ Nota').first().click()
+await page.waitForTimeout(300)
+await page.locator('#nota').fill('Nota smoke')
+await page.getByText('Desar').click()
+await page.waitForTimeout(400)
+text = await page.evaluate(() => document.body.innerText)
+log(text.includes('Nota smoke'), 'setmana: desa nota del dia')
+
+await page.getByText('＋ Tasca').first().click()
+await page.waitForTimeout(300)
+await page.locator('#tasca-nom').fill('Tasca smoke')
+await page.locator('input[type=checkbox]').uncheck()
+await page.getByText('Desar').click()
+await page.waitForTimeout(400)
+text = await page.evaluate(() => document.body.innerText)
+log(text.includes('Tasca smoke'), 'setmana: afegeix tasca puntual')
+
 await browser.close()
 console.log('--- ERRORS JS ---')
 console.log(errors.length ? errors.join('\n') : 'cap')

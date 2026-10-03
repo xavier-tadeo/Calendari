@@ -34,7 +34,7 @@
   const diaKey = $derived(DIES[pyWeekday(diaDate)])
   const esdDia = $derived(ordenats(delDia(app.esdeveniments, diaDate)))
   const fest = $derived(festiu(diaDate))
-  const tasques = $derived(tasquesDelDia(app.config, diaDate, diaKey))
+  const tasques = $derived(tasquesDelDia(app.config, app.setmanes, diaDate))
   const extra = $derived((app.config?.extraescolars ?? []).filter((x) => x.dia === diaKey))
 
   function canviaMes(offset) {

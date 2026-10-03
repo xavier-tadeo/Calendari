@@ -71,11 +71,14 @@
     {#if tasques.length === 0}
       <p class="suau">Cap tasca.</p>
     {:else}
-      {#each tasques as t (t.task_id)}
+      {#each tasques as t (t.key)}
         <div class="targeta fila" style="margin-bottom: 6px; gap: 10px">
           <span class="punt" style="background: {colors[t.assignat] || '#888'}"></span>
-          <span style="flex: 1">{t.nom}</span>
+          <span style="flex: 1" class:fet={t.fet}>
+            {t.nom}{#if t.custom} <span class="suau">· extra</span>{/if}
+          </span>
           <span class="suau">{noms[t.assignat] ?? t.assignat}</span>
+          {#if t.fet}<span class="suau">✓</span>{/if}
         </div>
       {/each}
     {/if}
@@ -92,3 +95,10 @@
     {/if}
   </div>
 </div>
+
+<style>
+  .fet {
+    text-decoration: line-through;
+    color: var(--suau);
+  }
+</style>

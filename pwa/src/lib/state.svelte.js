@@ -7,6 +7,7 @@ export const app = $state({
   error: null,
   config: null,
   estat: null,
+  setmanes: {},
   esdeveniments: [],
   menu: null,
   festius: [],

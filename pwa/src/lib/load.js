@@ -8,18 +8,20 @@ import { parseISO } from './dates.js'
 export async function loadAll() {
   app.error = null
   try {
-    const [config, festius, esd, menu, estat] = await Promise.all([
+    const [config, festius, esd, menu, estat, setmanes] = await Promise.all([
       load('config', loadConfigDefault),
       loadFestius(),
       load('esdeveniments', () => ({ esdeveniments: [] })),
       load('menu', () => ({})),
       load('estat', () => null),
+      load('setmanes', () => ({})),
     ])
     setFestius(festius)
     app.config = config ?? {}
     app.festius = festius
     app.esdeveniments = esd?.esdeveniments ?? []
     app.menu = menu ?? {}
+    app.setmanes = setmanes ?? {}
     app.estat = asseguraSetmana(app.config, { ...ESTAT_DEFAULT, ...(estat ?? {}) }, parseISO(app.dia))
     app.ready = true
   } catch (e) {
@@ -41,4 +43,8 @@ export async function saveMenu() {
 
 export async function saveConfig() {
   await save('config', app.config)
+}
+
+export async function saveSetmanes() {
+  await save('setmanes', app.setmanes)
 }

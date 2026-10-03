@@ -1,5 +1,5 @@
-import { adults, nens } from './config.js'
-import { diesSetmana, setmanaKey } from './dates.js'
+import { adults } from './config.js'
+import { diesSetmana, setmanaKey, iso, pyWeekday, DIES } from './dates.js'
 import { esFestiu, festiu } from './festius.js'
 
 export const TASQUES_DEFAULT = [
@@ -24,9 +24,9 @@ export const TASQUES_NENES = [
   { id: 'dents', nom: "Rentar-se les dents", punts: 1, dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'] },
 ]
 
-const CAP_DE_SETMANA = new Set(['ds', 'dg'])
 const HORA_ENTRADA = '08:45'
 const HORA_SORTIDA = '17:00'
+const SALTA_FESTIU = ['portar_cole', 'recollir_cole', 'deures']
 
 function minuts(hhmm) {
   const [h, m] = hhmm.split(':').map(Number)
@@ -56,26 +56,64 @@ function assignaEscola(list, dia, hora, nAss) {
   return [lliures[0], true]
 }
 
-export function generateSetmana(cfg, dia) {
+// --- Pla habitual (config.tasques) ---
+
+export function plaTasques(cfg) {
+  return cfg?.tasques && cfg.tasques.length ? cfg.tasques : TASQUES_DEFAULT
+}
+
+export function asseguraPla(cfg) {
+  if (!cfg.tasques) cfg.tasques = TASQUES_DEFAULT.map((t) => ({ ...t, dies: [...t.dies] }))
+  return cfg.tasques
+}
+
+export function afegeixPla(cfg, tasca) {
+  asseguraPla(cfg).push(tasca)
+}
+
+export function actualitzaPla(cfg, id, canvis) {
+  const t = asseguraPla(cfg).find((x) => x.id === id)
+  if (t) Object.assign(t, canvis)
+}
+
+export function esborraPla(cfg, id) {
+  cfg.tasques = asseguraPla(cfg).filter((x) => x.id !== id)
+}
+
+export function fixaPersona(cfg, id, memberId) {
+  const t = asseguraPla(cfg).find((x) => x.id === id)
+  if (t) t.fix = memberId
+}
+
+// --- Generacio i overrides de la setmana ---
+
+export function instanciaKey(taskId, dia) {
+  return `${taskId}_${dia}`
+}
+
+export function generaPla(cfg, dia) {
   const adultsList = adults(cfg)
-  const nensList = nens(cfg)
+  const plan = plaTasques(cfg)
   const week = setmanaKey(dia)
   const dies = diesSetmana(dia)
-  const files = []
+  const out = []
   const nAss = Object.fromEntries(adultsList.map((a) => [a.id, 0]))
 
-  TASQUES_DEFAULT.forEach((t, idx) => {
-    for (const d of t.dies) {
+  plan.forEach((t, idx) => {
+    for (const d of t.dies ?? []) {
       const dataDia = dies[d]
-      if (esFestiu(dataDia) && ['portar_cole', 'recollir_cole', 'deures'].includes(t.id)) continue
-      let assignat
+      if (!dataDia) continue
+      if (esFestiu(dataDia) && SALTA_FESTIU.includes(t.id)) continue
+      let assignat = 'familia'
       let nota = ''
-      if (t.tipus === 'escola') {
+      if (t.fix) {
+        assignat = t.fix
+      } else if (t.tipus === 'escola') {
         const hora = t.id === 'portar_cole' ? HORA_ENTRADA : HORA_SORTIDA
         const [a, ok] = assignaEscola(adultsList, d, hora, nAss)
         assignat = a
         nAss[assignat] = (nAss[assignat] ?? 0) + 1
-        nota = ok ? '' : "Cal organitzar-se (ningu lliure en aquesta hora)"
+        nota = ok ? '' : 'Cal organitzar-se (ningú lliure en aquesta hora)'
       } else if (t.tipus === 'familia') {
         assignat = 'familia'
         nota = 'Ho feu tots dos junts'
@@ -83,24 +121,65 @@ export function generateSetmana(cfg, dia) {
         assignat = ownerRotatiu(adultsList, week, idx)
       }
       const f = festiu(dataDia)
-      files.push({ task_id: t.id, nom: t.nom, dia: d, assignat, tipus: t.tipus, nota, festiu: f ? f.nom : null })
+      out.push({
+        key: instanciaKey(t.id, d),
+        task_id: t.id,
+        nom: t.nom,
+        dia: d,
+        data: iso(dataDia),
+        assignat,
+        tipus: t.tipus,
+        nota,
+        festiu: f ? f.nom : null,
+        fet: false,
+        custom: false,
+      })
     }
   })
+  return out
+}
 
-  for (const t of TASQUES_NENES) {
-    for (const nen of nensList) {
-      for (const d of t.dies) {
-        if (CAP_DE_SETMANA.has(d) && t.id === 'deures_nena') continue
-        files.push({ task_id: `${t.id}_${nen.id}`, nom: t.nom, dia: d, assignat: nen.id, tipus: 'nenes', punts: t.punts, nota: '' })
-      }
+export function tasquesSetmana(cfg, setmanes, dia) {
+  const week = setmanaKey(dia)
+  const sm = setmanes?.[week] ?? {}
+  const instancies = generaPla(cfg, dia)
+
+  for (const c of sm.custom ?? []) {
+    for (const d of c.dies ?? []) {
+      instancies.push({
+        key: instanciaKey(c.id, d),
+        task_id: c.id,
+        nom: c.nom,
+        dia: d,
+        data: null,
+        assignat: c.assignat || 'familia',
+        tipus: 'custom',
+        nota: c.nota ?? '',
+        festiu: null,
+        fet: false,
+        custom: true,
+      })
     }
   }
-  return files
+
+  const res = []
+  for (const t of instancies) {
+    if (sm.eliminats?.[t.key]) continue
+    if (sm.assignat?.[t.key]) t.assignat = sm.assignat[t.key]
+    t.fet = Boolean(sm.fet?.[t.key])
+    res.push(t)
+  }
+  const ordre = Object.fromEntries(DIES.map((d, i) => [d, i]))
+  res.sort((a, b) => ordre[a.dia] - ordre[b.dia])
+  return res
 }
 
-export function tasquesDelDia(cfg, diaDate, diaKey) {
-  return generateSetmana(cfg, diaDate).filter((f) => f.dia === diaKey)
+export function tasquesDelDia(cfg, setmanes, diaDate) {
+  const diaKey = DIES[pyWeekday(diaDate)]
+  return tasquesSetmana(cfg, setmanes, diaDate).filter((t) => t.dia === diaKey)
 }
+
+// --- Avisos ---
 
 export function solapamentsExtraescolars(cfg) {
   const avisos = []
