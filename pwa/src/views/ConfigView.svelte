@@ -101,7 +101,7 @@
 <div class="targeta" style="margin-bottom: 10px">
   <strong>Esforç de les tasques</strong>
   <p class="suau" style="margin: 4px 0 8px">
-    El pes (1 lleugera · 2 mitjana · 3 feixuga) decideix com es reparteixen perquè la càrrega sigui justa.
+    L'esforç (1 lleugera · 2 mitjana · 3 feixuga) decideix com es reparteixen perquè la càrrega sigui justa.
   </p>
   {#each tasques as t (t.id)}
     <div class="fila-pes">

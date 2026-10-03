@@ -90,7 +90,7 @@
 <div class="targeta repartiment">
   <div class="fila espai" style="margin-bottom: 6px">
     <strong>Repartiment de la setmana</strong>
-    <span class="suau">{balanc.total.fet}/{balanc.total.count} fetes · {balanc.total.pes} pts</span>
+    <span class="suau">{balanc.total.fet}/{balanc.total.count} fetes · esforç {balanc.total.pes}</span>
   </div>
   {#each balanc.adults as a (a.id)}
     <div class="carrega">
@@ -98,7 +98,7 @@
       <div class="barra">
         <div class="farcit" style="width: {Math.round((a.pes / balanc.maxPes) * 100)}%; background: {a.color}"></div>
       </div>
-      <span class="pts">{a.count} · {a.pes} pts</span>
+      <span class="carrega-txt">{a.count} · esforç {a.pes}</span>
     </div>
   {/each}
   <button class="boto ghost" style="width: 100%; margin-top: 8px" onclick={() => (bib = true)}>
@@ -293,11 +293,11 @@
     border-radius: 999px;
     min-width: 2px;
   }
-  .pts {
+  .carrega-txt {
     flex: none;
     font-size: 11px;
     color: var(--suau);
-    min-width: 52px;
+    min-width: 84px;
     text-align: right;
   }
 </style>
