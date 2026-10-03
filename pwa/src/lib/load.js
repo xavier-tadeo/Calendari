@@ -4,6 +4,7 @@ import { asseguraSetmana } from './punts.js'
 import { app } from './state.svelte.js'
 import { ESTAT_DEFAULT } from './config.js'
 import { asseguraBiblioteca } from './biblioteca.js'
+import { asseguraPlats } from './menu.js'
 import { parseISO } from './dates.js'
 
 export async function loadAll() {
@@ -20,6 +21,7 @@ export async function loadAll() {
     setFestius(festius)
     app.config = config ?? {}
     asseguraBiblioteca(app.config)
+    asseguraPlats(app.config)
     app.festius = festius
     app.esdeveniments = esd?.esdeveniments ?? []
     app.menu = menu ?? {}
