@@ -80,7 +80,8 @@ def _engine(url: str):
     return create_engine(url, pool_pre_ping=True)
 
 
-def _table(engine):
+@lru_cache(maxsize=4)
+def _taula(engine):
     from sqlalchemy import JSON, Column, DateTime, MetaData, String, Table, func
 
     meta = MetaData()
@@ -103,7 +104,7 @@ def llegeix(clau: str, default=None):
     from sqlalchemy import select
 
     engine = _engine(url)
-    taula = _table(engine)
+    taula = _taula(engine)
     with engine.connect() as conn:
         fila = conn.execute(select(taula.c.dades).where(taula.c.clau == clau)).fetchone()
     if fila is None:
@@ -120,7 +121,7 @@ def desa(clau: str, dades) -> None:
     from sqlalchemy import delete, insert
 
     engine = _engine(url)
-    taula = _table(engine)
+    taula = _taula(engine)
     with engine.begin() as conn:
         conn.execute(delete(taula).where(taula.c.clau == clau))
         conn.execute(insert(taula).values(clau=clau, dades=dades))
