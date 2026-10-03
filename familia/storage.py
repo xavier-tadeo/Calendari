@@ -24,16 +24,28 @@ FILES = {
 _TAULA = "familia_store"
 
 
+def _normalitza_url(url: str) -> str:
+    """Forca el driver psycopg2 (SQLAlchemy 2.1 triaria psycopg3 per defecte)."""
+    if url.startswith("postgresql+"):
+        return url
+    if url.startswith("postgresql://"):
+        return "postgresql+psycopg2://" + url[len("postgresql://"):]
+    if url.startswith("postgres://"):
+        return "postgresql+psycopg2://" + url[len("postgres://"):]
+    return url
+
+
 def _url() -> str | None:
     url = os.environ.get("FAMILIA_DB_URL")
     if url:
-        return url
+        return _normalitza_url(url)
     try:
         import streamlit as st
 
-        return st.secrets.get("postgres", {}).get("url")
+        url = st.secrets.get("postgres", {}).get("url")
     except Exception:  # noqa: BLE001
         return None
+    return _normalitza_url(url) if url else None
 
 
 def _local_path(clau: str) -> str:
