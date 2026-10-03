@@ -108,7 +108,12 @@ await page.waitForTimeout(400)
 text = await page.evaluate(() => document.body.innerText)
 log(text.includes('Biblioteca de tasques'), 'biblioteca: s’obre')
 log((await page.locator('.item').count()) > 0, 'biblioteca: llista tasques de la categoria')
+
 await page.locator('.item .boto', { hasText: 'Afegir' }).first().click()
+await page.waitForTimeout(300)
+text = await page.evaluate(() => document.body.innerText)
+log(text.includes('Afegir al pla'), 'biblioteca: tria de dies en afegir')
+await page.locator('.full', { hasText: 'Afegir al pla' }).getByText('Afegir', { exact: true }).click()
 await page.waitForTimeout(400)
 const cfgBib = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:config') || '{}'))
 log(
@@ -119,7 +124,30 @@ log(
   (await page.locator('.item .boto', { hasText: 'Traure' }).count()) > 0,
   'biblioteca: marca la tasca com afegida',
 )
-await page.locator('.full .boto.ghost', { hasText: '✕' }).first().click()
+
+// editar una tasca de la biblioteca
+await page.locator('.info').first().click()
+await page.waitForTimeout(300)
+log((await page.locator('#b-nom').count()) === 1, 'biblioteca: formulari d’edició')
+await page.locator('#b-nom').fill('Tasca bib editada')
+await page.getByText('Desar', { exact: true }).click()
+await page.waitForTimeout(400)
+const cfgEdit = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:config') || '{}'))
+log(
+  (cfgEdit.biblioteca || []).some((t) => t.nom === 'Tasca bib editada'),
+  'biblioteca: desa el nom editat',
+)
+
+// crear un subgrup
+await page.getByText('＋ Subgrup').click()
+await page.waitForTimeout(300)
+await page.locator('#c-nom').fill('Prova grup')
+await page.getByText('Desar', { exact: true }).click()
+await page.waitForTimeout(400)
+const cfgCat = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:config') || '{}'))
+log((cfgCat.biblio_cats || []).some((c) => c.nom === 'Prova grup'), 'biblioteca: crea subgrup')
+
+await page.locator('.full', { hasText: 'Biblioteca de tasques' }).locator('.boto.ghost', { hasText: '✕' }).first().click()
 await page.waitForTimeout(300)
 
 // --- Recurrència al formulari ---

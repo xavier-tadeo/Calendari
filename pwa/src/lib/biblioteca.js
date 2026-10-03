@@ -98,3 +98,49 @@ export const BIBLIOTECA = [
 export function tascaBiblioteca(id) {
   return BIBLIOTECA.find((t) => t.id === id)
 }
+
+// --- Biblioteca editable (es guarda a config) ---
+
+export function catsBiblioteca(cfg) {
+  return cfg?.biblio_cats?.length ? cfg.biblio_cats : CATEGORIES
+}
+
+export function tasquesBiblioteca(cfg) {
+  return cfg?.biblioteca?.length ? cfg.biblioteca : BIBLIOTECA
+}
+
+export function asseguraBiblioteca(cfg) {
+  if (!cfg.biblio_cats?.length) cfg.biblio_cats = CATEGORIES.map((c) => ({ ...c }))
+  if (!cfg.biblioteca?.length)
+    cfg.biblioteca = BIBLIOTECA.map((t) => ({ ...t, dies: [...(t.dies ?? [])] }))
+  return cfg
+}
+
+export function afegeixCategoria(cfg, cat) {
+  asseguraBiblioteca(cfg).biblio_cats.push(cat)
+}
+
+export function actualitzaCategoria(cfg, id, canvis) {
+  const c = asseguraBiblioteca(cfg).biblio_cats.find((x) => x.id === id)
+  if (c) Object.assign(c, canvis)
+}
+
+export function esborraCategoria(cfg, id) {
+  asseguraBiblioteca(cfg)
+  cfg.biblio_cats = cfg.biblio_cats.filter((c) => c.id !== id)
+  cfg.biblioteca = cfg.biblioteca.filter((t) => t.cat !== id)
+}
+
+export function afegeixTascaBib(cfg, tasca) {
+  asseguraBiblioteca(cfg).biblioteca.push(tasca)
+}
+
+export function actualitzaTascaBib(cfg, id, canvis) {
+  const t = asseguraBiblioteca(cfg).biblioteca.find((x) => x.id === id)
+  if (t) Object.assign(t, canvis)
+}
+
+export function esborraTascaBib(cfg, id) {
+  asseguraBiblioteca(cfg)
+  cfg.biblioteca = cfg.biblioteca.filter((t) => t.id !== id)
+}
