@@ -80,7 +80,11 @@ def init_state() -> None:
         st.session_state["mini_offset"] = 0
 
 
-init_state()
+try:
+    init_state()
+except Exception as e:  # noqa: BLE001
+    st.error(f"Error connectant amb la base de dades: {type(e).__name__}: {e}")
+    st.stop()
 cfg = st.session_state["cfg"]
 estat = st.session_state["estat"]
 
