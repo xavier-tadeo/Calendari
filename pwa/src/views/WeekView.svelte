@@ -101,6 +101,11 @@
       <span class="carrega-txt">{a.count} · esforç {a.pes}</span>
     </div>
   {/each}
+  {#if balanc.total.count === 0}
+    <span class="suau" style="display: block; text-align: center; margin-top: 6px">
+      Encara no hi ha cap tasca al pla. Tria'n de la biblioteca o crea'n amb ＋ Tasca.
+    </span>
+  {/if}
   <button class="boto ghost" style="width: 100%; margin-top: 8px" onclick={() => (bib = true)}>
     📚 Afegir de la biblioteca
   </button>

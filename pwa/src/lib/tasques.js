@@ -2,19 +2,8 @@ import { adults } from './config.js'
 import { diesSetmana, setmanaKey, iso, pyWeekday, DIES } from './dates.js'
 import { esFestiu, festiu } from './festius.js'
 
-export const TASQUES_DEFAULT = [
-  { id: 'super', nom: 'Comprar al super', dies: ['ds'], tipus: 'rotatiu', hora: '11:00', pes: 2 },
-  { id: 'esmorzars', nom: 'Preparar els esmorzars', dies: ['dl', 'dt', 'dc', 'dj', 'dv'], tipus: 'rotatiu', hora: '07:30', pes: 1 },
-  { id: 'sopars', nom: 'Cuinar el sopar', dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'], tipus: 'rotatiu', hora: '20:00', pes: 2 },
-  { id: 'portar_cole', nom: "Portar les nenes a l'escola", dies: ['dl', 'dt', 'dc', 'dj', 'dv'], tipus: 'escola', hora: '08:45', pes: 1 },
-  { id: 'recollir_cole', nom: "Recollir les nenes de l'escola", dies: ['dl', 'dt', 'dc', 'dj', 'dv'], tipus: 'escola', hora: '17:00', pes: 1 },
-  { id: 'dormir', nom: 'Posar les nenes a dormir', dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'], tipus: 'rotatiu', hora: '21:00', pes: 1 },
-  { id: 'roba', nom: 'Rentar i plegar la roba', dies: ['dl', 'dj', 'ds'], tipus: 'rotatiu', hora: '19:30', pes: 2 },
-  { id: 'neteja', nom: 'Netejar banys i cuina', dies: ['ds'], tipus: 'familia', hora: '10:00', pes: 3 },
-  { id: 'brossa', nom: 'Treure la brossa i reciclatge', dies: ['dl', 'dj'], tipus: 'rotatiu', hora: '21:15', pes: 1 },
-  { id: 'deures', nom: 'Deures / estudi amb les nenes', dies: ['dl', 'dt', 'dc', 'dj'], tipus: 'rotatiu', hora: '17:30', pes: 2 },
-  { id: 'mascota', nom: 'Cuidar la mascota', dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'], tipus: 'rotatiu', hora: '20:30', pes: 1 },
-]
+// El pla es crea de zero: la llista de tasques per defecte és buida
+export const TASQUES_DEFAULT = []
 
 export const BLOCS = [
   { id: 'mati', nom: 'Matí', color: '#fff8e1' },
@@ -118,7 +107,7 @@ function assignaEscola(list, dia, hora, carrega) {
 // --- Pla habitual (config.tasques) ---
 
 export function plaTasques(cfg) {
-  const base = cfg?.tasques && cfg.tasques.length ? cfg.tasques : TASQUES_DEFAULT
+  const base = cfg?.tasques ?? TASQUES_DEFAULT
   const perHora = Object.fromEntries(TASQUES_DEFAULT.map((t) => [t.id, t.hora]))
   const perPes = Object.fromEntries(TASQUES_DEFAULT.map((t) => [t.id, t.pes]))
   return base.map((t) => ({
@@ -129,9 +118,25 @@ export function plaTasques(cfg) {
   }))
 }
 
+// Puja a 2 per buidar el pla: torna a sembrar TASQUES_DEFAULT i neteja
+// les assignacions/tasques antigues de cada setmana.
+export const PLA_SEED = 2
+
 export function asseguraPla(cfg) {
-  if (!cfg.tasques) cfg.tasques = TASQUES_DEFAULT.map((t) => ({ ...t, dies: [...t.dies] }))
+  if (cfg.plaSeed !== PLA_SEED) {
+    cfg.tasques = TASQUES_DEFAULT.map((t) => ({ ...t, dies: [...t.dies] }))
+    cfg.plaSeed = PLA_SEED
+  }
   return cfg.tasques
+}
+
+export function netejaPla(setmanes) {
+  for (const w of Object.values(setmanes ?? {})) {
+    delete w.assignat
+    delete w.fet
+    delete w.eliminats
+    delete w.custom
+  }
 }
 
 export function afegeixPla(cfg, tasca) {

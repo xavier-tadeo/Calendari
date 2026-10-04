@@ -15,6 +15,39 @@ page.on('pageerror', (e) => errors.push('PAGEERROR: ' + e.message))
 
 await page.goto(url, { waitUntil: 'networkidle' })
 await page.waitForTimeout(800)
+
+// El pla per defecte va buit: seiem un parell de tasques com ho faria l'usuari
+await page.evaluate(async () => {
+  const r = await fetch('/config.default.json')
+  const cfg = await r.json()
+  cfg.plaSeed = 2
+  cfg.tasques = [
+    { id: 'super', nom: 'Comprar al super', dies: ['ds'], tipus: 'rotatiu', hora: '11:00', pes: 2 },
+    {
+      id: 'sopars',
+      nom: 'Cuinar el sopar',
+      dies: ['dl', 'dt', 'dc', 'dj', 'dv', 'ds', 'dg'],
+      tipus: 'rotatiu',
+      hora: '20:00',
+      pes: 2,
+    },
+    {
+      id: 'neteja',
+      nom: 'Netejar banys',
+      dies: ['ds'],
+      tipus: 'familia',
+      hora: '10:00',
+      pes: 3,
+      freq: 'quinzenal',
+      paritat: 0,
+    },
+    { id: 'deures', nom: 'Deures', dies: ['dl', 'dt', 'dc', 'dj'], tipus: 'rotatiu', hora: '17:30', pes: 2 },
+  ]
+  localStorage.setItem('familia:config', JSON.stringify(cfg))
+})
+await page.reload({ waitUntil: 'networkidle' })
+await page.waitForTimeout(800)
+
 let text = await page.evaluate(() => document.body.innerText)
 log(text.includes('Octubre') || /\d{4}/.test(text), 'calendari amb mes')
 
