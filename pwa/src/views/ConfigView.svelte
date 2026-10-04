@@ -8,9 +8,15 @@
   import { hasSupabase } from '../lib/supabase.js'
   import { PALETA, nomColor } from '../lib/esdeveniments.js'
   import { saveConfig } from '../lib/load.js'
+  import { extraescolars } from '../lib/extraescolars.js'
+  import ExtraescolarsSheet from '../components/ExtraescolarsSheet.svelte'
+
+  let extra = $state(false)
 
   const avisos = $derived(resumAvisos(app.config))
   const tasques = $derived(plaTasques(app.config))
+  const extraescolarsList = $derived(extraescolars(app.config))
+  const colorsNenes = $derived(Object.fromEntries(nens(app.config).map((n) => [n.id, n.color])))
   const PES_OPCIONS = [1, 2, 3]
 
   async function setColor(membre, c) {
@@ -90,12 +96,22 @@
 </div>
 
 <div class="targeta" style="margin-bottom: 10px">
-  <strong>Extraescolars</strong>
-  {#each app.config?.extraescolars ?? [] as x, i (i)}
-    <div class="suau" style="margin-top: 4px">
-      {DIES_NOM[x.dia]} · {x.nom} ({x.inici}–{x.fi})
+  <div class="fila espai">
+    <strong>Extraescolars</strong>
+    <button class="boto ghost" onclick={() => (extra = true)}>✏️ Editar</button>
+  </div>
+  {#if extraescolarsList.length === 0}
+    <p class="suau" style="margin: 6px 0 0">Cap extraescolar configurada.</p>
+  {:else}
+    <div class="extra-resum">
+      {#each extraescolarsList as x, i (i)}
+        <span class="xip-resum">
+          <span class="punt" style="background: {colorsNenes[x.nina] || '#888'}"></span>
+          {x.nom} · {DIES_NOM[x.dia]} {x.inici}–{x.fi}
+        </span>
+      {/each}
     </div>
-  {/each}
+  {/if}
 </div>
 
 <div class="targeta" style="margin-bottom: 10px">
@@ -131,6 +147,10 @@
   </div>
 </div>
 
+{#if extra}
+  <ExtraescolarsSheet onclose={() => (extra = false)} />
+{/if}
+
 <style>
   .colors {
     display: flex;
@@ -155,6 +175,23 @@
     gap: 8px;
     padding: 4px 0;
     border-top: 1px solid var(--linia);
+  }
+  .extra-resum {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  .xip-resum {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: #f6f6f6;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--suau);
   }
   .nom-tasca {
     flex: 1;

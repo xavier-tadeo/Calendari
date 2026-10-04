@@ -267,6 +267,65 @@ await page.waitForTimeout(400)
 const cfgPlat = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:config') || '{}'))
 log((cfgPlat.menjar || []).some((p) => p.nom === 'Prova plat'), 'plats: desa un plat nou')
 
+// --- Extraescolars editables des de Configuracio ---
+await page.mouse.click(8, 8)
+await page.waitForTimeout(300)
+await page.getByText('Config', { exact: true }).first().click()
+await page.waitForTimeout(400)
+log((await page.locator('.xip-resum').count()) >= 0, 'config: resum extraescolars')
+await page.getByText('✏️ Editar').click()
+await page.waitForTimeout(400)
+log((await page.locator('.grup').count()) === 2, 'extra: agrupat per nina')
+log((await page.locator('.item').count()) >= 1, 'extra: llistat de les extraescolars')
+
+await page.getByText('Nova extraescolar').click()
+await page.waitForTimeout(300)
+await page.locator('#x-nom').fill('Prova extra')
+await page.locator('#x-ini').fill('17:00')
+await page.locator('#x-fi').fill('18:00')
+await page.getByText('Desar', { exact: true }).click()
+await page.waitForTimeout(400)
+let cfgEx = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:config') || '{}'))
+log((cfgEx.extraescolars || []).some((x) => x.nom === 'Prova extra'), 'extra: desa una nova')
+
+// horari invalid -> no deixa desar
+await page.getByText('Nova extraescolar').click()
+await page.waitForTimeout(300)
+await page.locator('#x-nom').fill('Xoco')
+await page.locator('.full').last().getByText('Nena 2').click()
+await page.locator('#x-ini').fill('17:30')
+await page.locator('#x-fi').fill('17:45')
+await page.locator('.full').last().getByText('Dijous').click()
+await page.waitForTimeout(300)
+text = await page.evaluate(() => document.body.innerText)
+log(text.includes('Xoca amb'), 'extra: avisa de solapaments')
+log(await page.getByText('Desar', { exact: true }).isDisabled(), 'extra: bloqueja desar si xoca')
+
+// editar l existent
+await page.mouse.click(8, 8)
+await page.waitForTimeout(300)
+await page.locator('.item .info').first().click()
+await page.waitForTimeout(300)
+await page.locator('#x-nom').fill('Logopeda editada')
+await page.getByText('Desar', { exact: true }).click()
+await page.waitForTimeout(400)
+cfgEx = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:config') || '{}'))
+log(
+  (cfgEx.extraescolars || []).some((x) => x.nom === 'Logopeda editada'),
+  'extra: desa l’edició',
+)
+
+// esborrar
+await page.locator('.item .info').first().click()
+await page.waitForTimeout(300)
+await page.locator('.full').last().getByText('🗑').click()
+await page.waitForTimeout(400)
+cfgEx = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:config') || '{}'))
+log(
+  !(cfgEx.extraescolars || []).some((x) => x.nom === 'Logopeda editada'),
+  'extra: esborrada',
+)
+
 await browser.close()
 console.log('--- ERRORS JS ---')
 console.log(errors.length ? errors.join('\n') : 'cap')
