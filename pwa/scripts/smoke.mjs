@@ -273,7 +273,7 @@ await page.waitForTimeout(300)
 await page.getByText('Config', { exact: true }).first().click()
 await page.waitForTimeout(400)
 log((await page.locator('.xip-resum').count()) >= 0, 'config: resum extraescolars')
-await page.getByText('✏️ Editar').click()
+await page.locator('.targeta', { hasText: 'Extraescolars' }).getByText('✏️ Editar').click()
 await page.waitForTimeout(400)
 log((await page.locator('.grup').count()) === 2, 'extra: agrupat per nina')
 log((await page.locator('.item').count()) >= 1, 'extra: llistat de les extraescolars')
@@ -324,6 +324,55 @@ cfgEx = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:confi
 log(
   !(cfgEx.extraescolars || []).some((x) => x.nom === 'Logopeda editada'),
   'extra: esborrada',
+)
+
+// --- Horari dels adults ---
+// si la mare encara no està definida, l'omplim automàticament (llançada del nuvol)
+await page.evaluate(async () => {
+  const cfg = JSON.parse(localStorage.getItem('familia:config'))
+  delete cfg.horariSeed
+  cfg.familia.adults[1].per_definir = true
+  cfg.familia.adults[1].horari = { dl: { feina: [], lloc: '', fora: [] } }
+  localStorage.setItem('familia:config', JSON.stringify(cfg))
+})
+await page.reload({ waitUntil: 'networkidle' })
+await page.waitForTimeout(900)
+let cfgH = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:config') || '{}'))
+log(
+  cfgH.familia?.adults?.[1]?.horari?.dt?.feina?.[0] === '08:30',
+  'horari: omple el de la mare automàticament',
+)
+log(cfgH.familia?.adults?.[1]?.per_definir === false, 'horari: la mare ja no està per definir')
+
+await page.getByText('Config', { exact: true }).first().click()
+await page.waitForTimeout(400)
+text = await page.evaluate(() => document.body.innerText)
+log(text.includes('08:30–16:30'), 'horari: resum de la jornada a la targeta')
+
+await page.getByText('✏️ Editar').first().click()
+await page.waitForTimeout(400)
+text = await page.evaluate(() => document.body.innerText)
+log(text.includes('Horari · Papa'), 'horari: obre l’editor')
+await page.locator('#h-ini').fill('09:15')
+await page.keyboard.press('Tab')
+await page.waitForTimeout(700)
+cfgH = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:config') || '{}'))
+log(cfgH.familia?.adults?.[0]?.horari?.dl?.feina?.[0] === '09:15', 'horari: desa l’edició')
+
+await page.getByText('Copiar a DL–DV').click()
+await page.waitForTimeout(700)
+cfgH = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:config') || '{}'))
+log(
+  cfgH.familia?.adults?.[0]?.horari?.dv?.feina?.[0] === '09:15',
+  'horari: copia als dies feiners',
+)
+
+await page.getByText('Lliure', { exact: true }).click()
+await page.waitForTimeout(700)
+cfgH = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:config') || '{}'))
+log(
+  cfgH.familia?.adults?.[0]?.horari?.dl === undefined,
+  'horari: marca un dia com a lliure',
 )
 
 await browser.close()

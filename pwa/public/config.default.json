@@ -19,13 +19,13 @@
         "id": "mama",
         "nom": "Mama",
         "color": "#d62728",
-        "per_definir": true,
+        "per_definir": false,
         "horari": {
-          "dl": {"feina": [], "lloc": "", "fora": []},
-          "dt": {"feina": [], "lloc": "", "fora": []},
-          "dc": {"feina": [], "lloc": "", "fora": []},
-          "dj": {"feina": [], "lloc": "", "fora": []},
-          "dv": {"feina": [], "lloc": "", "fora": []}
+          "dl": {"feina": ["08:30", "16:30"], "lloc": "oficina", "fora": ["08:30", "16:30"]},
+          "dt": {"feina": ["08:30", "16:30"], "lloc": "oficina", "fora": ["08:30", "16:30"]},
+          "dc": {"feina": ["08:30", "16:30"], "lloc": "oficina", "fora": ["08:30", "16:30"]},
+          "dj": {"feina": ["08:30", "16:30"], "lloc": "oficina", "fora": ["08:30", "16:30"]},
+          "dv": {"feina": ["08:30", "18:00"], "lloc": "oficina", "fora": ["08:30", "18:00"]}
         }
       }
     ],

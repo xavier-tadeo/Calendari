@@ -6,6 +6,7 @@ import { ESTAT_DEFAULT } from './config.js'
 import { asseguraBiblioteca } from './biblioteca.js'
 import { asseguraPlats } from './menu.js'
 import { asseguraPla, netejaPla, PLA_SEED } from './tasques.js'
+import { asseguraHorari } from './horari.js'
 import { parseISO } from './dates.js'
 
 export async function loadAll() {
@@ -26,9 +27,15 @@ export async function loadAll() {
     asseguraPlats(app.config)
     app.setmanes = setmanes ?? {}
     asseguraPla(app.config)
-    if (prevSeed !== undefined && prevSeed !== PLA_SEED) {
-      netejaPla(app.setmanes)
-      await Promise.all([save('config', app.config), save('setmanes', app.setmanes)])
+    const horariNou = asseguraHorari(app.config)
+    const resetPla = prevSeed !== undefined && prevSeed !== PLA_SEED
+    if (resetPla || horariNou) {
+      const proms = [save('config', app.config)]
+      if (resetPla) {
+        netejaPla(app.setmanes)
+        proms.push(save('setmanes', app.setmanes))
+      }
+      await Promise.all(proms)
     }
     app.festius = festius
     app.esdeveniments = esd?.esdeveniments ?? []

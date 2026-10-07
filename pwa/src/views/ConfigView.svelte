@@ -1,6 +1,6 @@
 <script>
   import { app } from '../lib/state.svelte.js'
-  import { DIES, DIES_NOM } from '../lib/dates.js'
+  import { DIES_NOM } from '../lib/dates.js'
   import { adults, nens } from '../lib/config.js'
   import { resumAvisos, plaTasques, actualitzaPla } from '../lib/tasques.js'
   import { PESOS } from '../lib/biblioteca.js'
@@ -9,9 +9,12 @@
   import { PALETA, nomColor } from '../lib/esdeveniments.js'
   import { saveConfig } from '../lib/load.js'
   import { extraescolars } from '../lib/extraescolars.js'
+  import { resumHorari } from '../lib/horari.js'
   import ExtraescolarsSheet from '../components/ExtraescolarsSheet.svelte'
+  import HorariSheet from '../components/HorariSheet.svelte'
 
   let extra = $state(false)
+  let horari = $state(null)
 
   const avisos = $derived(resumAvisos(app.config))
   const tasques = $derived(plaTasques(app.config))
@@ -58,26 +61,21 @@
 
 {#each adults(app.config) as a (a.id)}
   <div class="targeta" style="margin-bottom: 10px">
-    <div class="fila" style="gap: 8px; margin-bottom: 6px">
-      <span class="punt" style="background: {a.color}"></span>
-      <strong>{a.nom}</strong>
-      {#if a.per_definir}<span class="xip">per definir</span>{/if}
+    <div class="fila espai" style="margin-bottom: 6px">
+      <span class="fila" style="gap: 8px; min-width: 0">
+        <span class="punt" style="background: {a.color}"></span>
+        <strong>{a.nom}</strong>
+        {#if a.per_definir}<span class="xip">per definir</span>{/if}
+      </span>
+      <button class="boto ghost" onclick={() => (horari = a)} type="button">✏️ Editar</button>
     </div>
     <div class="etiqueta" style="margin-top: 0">Color</div>
     {@render paleta(a)}
-    {#each DIES as d (d)}
-      {@const h = a.horari?.[d] ?? {}}
-      <div class="fila espai suau" style="padding: 2px 0">
-        <span>{DIES_NOM[d]}</span>
-        <span>
-          {#if h.fora?.length}
-            fora {h.fora[0]}–{h.fora[1]}
-          {:else if h.lloc}
-            {h.lloc}
-          {:else}
-            lliure
-          {/if}
-        </span>
+    <div class="etiqueta">Jornada</div>
+    {#each resumHorari(a) as r, i (i)}
+      <div class="fila espai suau" style="padding: 2px 0; gap: 10px">
+        <span style="flex: none">{r.dies}</span>
+        <span class="resum-dia" style="text-align: right">{r.text}</span>
       </div>
     {/each}
   </div>
@@ -151,6 +149,10 @@
   <ExtraescolarsSheet onclose={() => (extra = false)} />
 {/if}
 
+{#if horari}
+  <HorariSheet adult={horari} onclose={() => (horari = null)} />
+{/if}
+
 <style>
   .colors {
     display: flex;
@@ -200,6 +202,12 @@
     text-overflow: ellipsis;
     white-space: nowrap;
     font-size: 13px;
+  }
+  .resum-dia {
+    flex: 1;
+    min-width: 0;
+    overflow-wrap: anywhere;
+    font-size: 12px;
   }
   .pes-xips {
     display: flex;
