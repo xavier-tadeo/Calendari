@@ -7,18 +7,20 @@ import { asseguraBiblioteca } from './biblioteca.js'
 import { asseguraPlats } from './menu.js'
 import { asseguraPla, netejaPla, PLA_SEED } from './tasques.js'
 import { asseguraHorari } from './horari.js'
+import { asseguraCompra, sincronitzaMenu } from './compra.js'
 import { parseISO } from './dates.js'
 
 export async function loadAll() {
   app.error = null
   try {
-    const [config, festius, esd, menu, estat, setmanes] = await Promise.all([
+    const [config, festius, esd, menu, estat, setmanes, compra] = await Promise.all([
       load('config', loadConfigDefault),
       loadFestius(),
       load('esdeveniments', () => ({ esdeveniments: [] })),
       load('menu', () => ({})),
       load('estat', () => null),
       load('setmanes', () => ({})),
+      load('compra', () => null),
     ])
     setFestius(festius)
     const prevSeed = config?.plaSeed
@@ -40,6 +42,9 @@ export async function loadAll() {
     app.festius = festius
     app.esdeveniments = esd?.esdeveniments ?? []
     app.menu = menu ?? {}
+    const abansCompra = compra ? JSON.stringify(compra) : null
+    app.compra = asseguraCompra(compra, app.menu)
+    if (JSON.stringify(app.compra) !== abansCompra) await save('compra', app.compra)
     app.estat = asseguraSetmana(app.config, { ...ESTAT_DEFAULT, ...(estat ?? {}) }, parseISO(app.dia))
     app.ready = true
   } catch (e) {
@@ -57,6 +62,11 @@ export async function saveEstat() {
 
 export async function saveMenu() {
   await save('menu', app.menu)
+  if (app.compra && sincronitzaMenu(app.compra, app.menu)) await saveCompra()
+}
+
+export async function saveCompra() {
+  await save('compra', app.compra)
 }
 
 export async function saveConfig() {

@@ -10,6 +10,7 @@ export const app = $state({
   setmanes: {},
   esdeveniments: [],
   menu: null,
+  compra: null,
   festius: [],
   tab: 'calendari',
   dia: todayISO(),

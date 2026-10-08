@@ -375,6 +375,60 @@ log(
   'horari: marca un dia com a lliure',
 )
 
+// --- Llistes de la compra ---
+await page.mouse.click(8, 8)
+await page.waitForTimeout(400)
+await page.getByText('Menú', { exact: true }).first().click()
+await page.waitForTimeout(500)
+text = await page.evaluate(() => document.body.innerText)
+log(text.includes('Llistes de la compra'), 'compra: secció de llistes')
+log(text.includes('De la setmana'), 'compra: llista automàtica del menú')
+log((await page.locator('.llista-card').count()) >= 1, 'compra: targetes de les llistes')
+
+await page.locator('.obre-llista').first().click()
+await page.waitForTimeout(500)
+log((await page.locator('.item').count()) >= 1, 'compra: obre el modal amb productes')
+text = await page.evaluate(() => document.body.innerText)
+log(text.includes('comprats'), 'compra: mostra el progrés')
+
+await page.locator('.item').first().locator('.nom-item').click()
+await page.waitForTimeout(800)
+let comp = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:compra') || '{}'))
+log(
+  (comp.llistes || []).some((l) => (l.items ?? []).some((i) => i.comprat)),
+  'compra: desa el producte tachat',
+)
+
+await page.locator('input[placeholder="Afegir producte..."]').fill('Prova compra')
+await page.keyboard.press('Enter')
+await page.waitForTimeout(800)
+comp = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:compra') || '{}'))
+log(
+  (comp.llistes || []).some((l) => (l.items ?? []).some((i) => i.nom === 'Prova compra')),
+  'compra: afegeix un producte',
+)
+
+const nComprats = Number((await page.evaluate(() => document.body.innerText)).match(/(\d+) comprats/)?.[1] ?? 0)
+await page.getByRole('button', { name: /Netejar comprats/ }).click()
+await page.waitForTimeout(800)
+comp = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:compra') || '{}'))
+log(
+  (comp.llistes || []).every((l) => (l.items ?? []).every((i) => !i.comprat)),
+  'compra: neteja els comprats',
+)
+
+await page.locator('.full').first().getByText('✕').click()
+await page.waitForTimeout(400)
+await page.getByText('＋ Nova llista').click()
+await page.waitForTimeout(300)
+await page.locator('#l-nom').fill('Farmàcia')
+await page.getByText('Desar', { exact: true }).click()
+await page.waitForTimeout(600)
+comp = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:compra') || '{}'))
+log((comp.llistes ?? []).some((l) => l.nom === 'Farmàcia'), 'compra: crea una llista nova')
+log((comp.llistes ?? []).length >= 2, 'compra: guarda més d’una llista')
+log(nComprats > 0, 'compra: hi havia productes comprats')
+
 await browser.close()
 console.log('--- ERRORS JS ---')
 console.log(errors.length ? errors.join('\n') : 'cap')

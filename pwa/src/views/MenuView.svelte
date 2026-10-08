@@ -1,19 +1,21 @@
 <script>
   import { app } from '../lib/state.svelte.js'
   import { DIES, DIES_NOM } from '../lib/dates.js'
-  import { menuActual, llistaCompra, estatMeal, personesMenu, platsCataleg } from '../lib/menu.js'
-  import { saveMenu } from '../lib/load.js'
+  import { menuActual, estatMeal, personesMenu, platsCataleg } from '../lib/menu.js'
+  import { llistesDe, llistaDe, comptatge, afegeixLlista, esborraLlista } from '../lib/compra.js'
+  import { saveMenu, saveCompra } from '../lib/load.js'
   import MenuSheet from '../components/MenuSheet.svelte'
   import PlatsSheet from '../components/PlatsSheet.svelte'
+  import CompraSheet from '../components/CompraSheet.svelte'
 
   let menu = $state(menuActual(app.menu))
-  let comprats = $state({})
   let sheet = $state(null)
   let platsSheet = $state(false)
+  let oberta = $state(null)
+  let editant = $state(null)
 
   const persones = $derived(personesMenu(app.config))
-  const compra = $derived(llistaCompra(menu))
-  const ingredients = $derived(Object.entries(compra))
+  const llistes = $derived(llistesDe(app.compra))
 
   async function desar() {
     app.menu = $state.snapshot(menu)
@@ -27,6 +29,42 @@
   async function tancaSheet() {
     sheet = null
     await desar()
+  }
+
+  function novaLlista() {
+    editant = { id: null, nom: '', nova: true }
+  }
+
+  function editarLlista(l) {
+    editant = { id: l.id, nom: l.nom, nova: false }
+  }
+
+  async function desarLlista() {
+    const nom = editant?.nom.trim()
+    if (!nom) return
+    if (editant.nova) afegeixLlista(app.compra, nom)
+    else {
+      const l = llistaDe(app.compra, editant.id)
+      if (l) l.nom = nom
+    }
+    await saveCompra()
+    editant = null
+  }
+
+  async function esborrarLlista() {
+    if (!editant || editant.nova) return
+    esborraLlista(app.compra, editant.id)
+    if (oberta === editant.id) oberta = null
+    await saveCompra()
+    editant = null
+  }
+
+  function cancelarEdicio() {
+    editant = null
+  }
+
+  function obrirLlista(id) {
+    oberta = id
   }
 </script>
 
@@ -74,20 +112,30 @@
   </div>
 {/each}
 
-<h2 class="titol" style="font-size: 18px; margin: 16px 0 6px">Llista de la compra</h2>
-<div class="targeta">
-  {#if ingredients.length === 0}
-    <span class="suau">Res pendent.</span>
-  {:else}
-    {#each ingredients as [ing, n] (ing)}
-      <label class="fila" style="gap: 10px; padding: 5px 0">
-        <input type="checkbox" bind:checked={comprats[ing]} />
-        <span style="flex: 1" class:fet={comprats[ing]}>{ing}</span>
-        {#if n > 1}<span class="xip">×{n}</span>{/if}
-      </label>
-    {/each}
-  {/if}
-</div>
+<h2 class="titol" style="font-size: 18px; margin: 16px 0 6px">Llistes de la compra</h2>
+{#each llistes as l (l.id)}
+  {@const ct = comptatge(l)}
+  <div class="targeta llista-card">
+    <div class="fila espai">
+      <button class="obre-llista" onclick={() => obrirLlista(l.id)} type="button">
+        <span class="nom-llista">{l.icona} {l.nom}</span>
+        <span class="suau">{ct.comprats}/{ct.total}</span>
+      </button>
+      <button class="boto ghost petit" onclick={() => editarLlista(l)} aria-label="Editar llista" type="button">
+        ✏️
+      </button>
+    </div>
+    <div class="barra">
+      <div class="farcit" style="width: {ct.pct}%"></div>
+    </div>
+    {#if l.automatica}
+      <span class="suau nota-llista">Generada amb els ingredients del menú</span>
+    {:else if ct.total === 0}
+      <span class="suau nota-llista">Buida · toca per obrir-la</span>
+    {/if}
+  </div>
+{/each}
+<button class="boto ghost" style="width: 100%" onclick={novaLlista} type="button">＋ Nova llista</button>
 
 {#if sheet}
   <MenuSheet
@@ -104,6 +152,41 @@
 
 {#if platsSheet}
   <PlatsSheet onclose={() => (platsSheet = false)} />
+{/if}
+
+{#if oberta && llistaDe(app.compra, oberta)}
+  <CompraSheet llista={llistaDe(app.compra, oberta)} onclose={() => (oberta = null)} />
+{/if}
+
+{#if editant}
+  <!-- svelte-ignore a11y_click_events_have_key_events a11y_no_static_element_interactions -->
+  <div class="overlay" onclick={cancelarEdicio} role="presentation">
+    <div class="full" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" tabindex="-1">
+      <div class="fila espai" style="margin-bottom: 6px">
+        <h2 class="titol">{editant.nova ? 'Nova llista' : 'Editar llista'}</h2>
+        <button class="boto ghost" onclick={cancelarEdicio}>✕</button>
+      </div>
+
+      <label class="etiqueta" for="l-nom">Nom</label>
+      <input
+        id="l-nom"
+        class="camp"
+        bind:value={editant.nom}
+        onkeydown={(e) => e.key === 'Enter' && desarLlista()}
+        placeholder="p. ex. Mercat, Farmàcia, Rebost..."
+      />
+
+      <div class="fila" style="gap: 8px; margin-top: 16px">
+        {#if !editant.nova && !llistaDe(app.compra, editant.id)?.automatica}
+          <button class="boto secundari" onclick={esborrarLlista}>🗑</button>
+        {/if}
+        <button class="boto secundari" style="flex: 1" onclick={cancelarEdicio}>Cancel·lar</button>
+        <button class="boto" style="flex: 1" onclick={desarLlista} disabled={!editant.nom.trim()}>
+          Desar
+        </button>
+      </div>
+    </div>
+  </div>
 {/if}
 
 <style>
@@ -166,8 +249,46 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .fet {
-    text-decoration: line-through;
-    color: var(--suau);
+  .llista-card {
+    margin-bottom: 10px;
+  }
+  .obre-llista {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    text-align: left;
+    padding: 2px 0;
+  }
+  .nom-llista {
+    font-size: 15px;
+    font-weight: 700;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .barra {
+    height: 6px;
+    border-radius: 999px;
+    background: #eceff1;
+    overflow: hidden;
+    margin-top: 8px;
+  }
+  .farcit {
+    height: 100%;
+    background: var(--primari);
+    transition: width 0.2s;
+  }
+  .nota-llista {
+    display: block;
+    margin-top: 6px;
+    font-size: 11px;
+  }
+  .boto.petit {
+    padding: 6px 10px;
+    font-size: 12px;
+    flex: none;
   }
 </style>
