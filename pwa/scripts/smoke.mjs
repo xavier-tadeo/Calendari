@@ -428,6 +428,98 @@ comp = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:compra
 log((comp.llistes ?? []).some((l) => l.nom === 'Farmàcia'), 'compra: crea una llista nova')
 log((comp.llistes ?? []).length >= 2, 'compra: guarda més d’una llista')
 log(nComprats > 0, 'compra: hi havia productes comprats')
+log(
+  (comp.productes ?? []).some((p) => p.nom === 'Prova compra'),
+  'compra: guarda el producte al catàleg',
+)
+
+async function novaCompra(nom) {
+  await page.getByText('＋ Nova llista').click()
+  await page.waitForTimeout(300)
+  await page.locator('#l-nom').fill(nom)
+  await page.getByText('Desar', { exact: true }).click()
+  await page.waitForTimeout(500)
+}
+await novaCompra('Zeta')
+await novaCompra('Alberg')
+const nomsL = (await page.locator('.nom-llista').allInnerTexts()).map((s) => s.replace(/^\S+\s/, '').trim())
+log(nomsL[0] === 'De la setmana', 'compra: la llista del menú va primera')
+log(
+  JSON.stringify(nomsL.slice(1)) === JSON.stringify([...nomsL.slice(1)].sort((a, b) => a.localeCompare(b, 'ca'))),
+  'compra: llistes en ordre alfabètic',
+)
+
+// Productes desats: crear-ne un de nou des de Menú
+await page.getByText('📦 Productes').click()
+await page.waitForTimeout(500)
+text = await page.evaluate(() => document.body.innerText)
+log(text.includes('Productes desats'), 'compra: obre el catàleg de productes')
+await page.getByRole('button', { name: /Nou producte/ }).click()
+await page.waitForTimeout(300)
+await page.locator('#pr-nom').fill('Test desats')
+await page.locator('#pr-cat').selectOption('rebost')
+await page.getByText('Desar', { exact: true }).click()
+await page.waitForTimeout(600)
+comp = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:compra') || '{}'))
+log(
+  (comp.productes ?? []).some((p) => p.nom === 'Test desats'),
+  'compra: crea un producte al catàleg',
+)
+const nomsP = (await page.locator('.item strong').allInnerTexts()).map((s) => s.trim())
+log(nomsP.length >= 1, 'compra: el catàleg llista productes')
+log(
+  JSON.stringify(nomsP) === JSON.stringify([...nomsP].sort((a, b) => a.localeCompare(b, 'ca'))),
+  'compra: catàleg en ordre alfabètic',
+)
+await page.locator('.full').first().getByText('✕').click()
+await page.waitForTimeout(400)
+
+// Afegir un producte desat a la llista sense escriure
+await page.locator('.obre-llista').first().click()
+await page.waitForTimeout(500)
+await page.locator('.full').first().getByLabel('Productes desats').click()
+await page.waitForTimeout(400)
+log((await page.locator('.xip-prod').count()) >= 1, 'compra: panell de productes desats')
+const nomChip = 'Test desats'
+await page.getByRole('button', { name: nomChip, exact: true }).click()
+await page.waitForTimeout(700)
+comp = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:compra') || '{}'))
+log(
+  (comp.llistes ?? []).filter((l) => l.automatica).some((l) => (l.items ?? []).some((i) => i.nom === nomChip)),
+  'compra: afegeix un producte desat a la llista',
+)
+await page.locator('.full').first().getByText('Fet').click()
+await page.waitForTimeout(400)
+
+// Esborrar un ingredient del menú: no ha de tornar
+const its = page.locator('.item')
+let idxDel = -1
+for (let i = 0; i < (await its.count()); i++) {
+  const t = (await its.nth(i).locator('.nom-txt').innerText()).trim()
+  if (t !== nomChip) {
+    idxDel = i
+    break
+  }
+}
+const nomDel = (await its.nth(idxDel).locator('.nom-txt').innerText()).trim()
+await its.nth(idxDel).locator('.mini').click()
+await page.waitForTimeout(300)
+await page.locator('.full').last().getByText('🗑').click()
+await page.waitForTimeout(600)
+await page.locator('.full').first().getByText('✕').click()
+await page.waitForTimeout(600)
+
+await page.reload({ waitUntil: 'networkidle' })
+await page.waitForTimeout(900)
+await page.getByText('Menú', { exact: true }).first().click()
+await page.waitForTimeout(500)
+await page.locator('.obre-llista').first().click()
+await page.waitForTimeout(500)
+const nomsAra = await page.locator('.nom-txt').allInnerTexts()
+log(!nomsAra.includes(nomDel), 'compra: el producte esborrat no torna')
+comp = await page.evaluate(() => JSON.parse(localStorage.getItem('familia:compra') || '{}'))
+log((comp.exclous ?? []).includes(nomDel.toLowerCase()), 'compra: recorda el producte esborrat')
+log(nomsAra.includes(nomChip), 'compra: el producte afegit es manté')
 
 await browser.close()
 console.log('--- ERRORS JS ---')

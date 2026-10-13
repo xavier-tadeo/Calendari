@@ -4,6 +4,10 @@
   import {
     catsDe,
     itemsPerCategoria,
+    productesPerCategoria,
+    desaProducte,
+    treuExclous,
+    mateixNom,
     comptatge,
     afegeixItem,
     actualitzaItem,
@@ -21,13 +25,17 @@
   let nou = $state({ nom: '', quantitat: '', cat: 'altres' })
   let editant = $state(null)
   let novaCat = $state('')
+  let afegits = $state(0)
   let pendent = false
   let timer = null
 
   const cats = $derived(catsDe(app.compra))
   const grups = $derived(itemsPerCategoria(llista, app.compra))
+  const grupsProds = $derived(productesPerCategoria(app.compra))
   const ct = $derived(comptatge(llista))
   const suggerits = $derived([...new Set((app.compra?.llistes ?? []).flatMap((l) => (l.items ?? []).map((i) => i.nom)))])
+
+  const jaAla = (p) => (llista.items ?? []).some((i) => mateixNom(i.nom, p.nom))
 
   function desa() {
     pendent = true
@@ -42,9 +50,24 @@
     const nom = nou.nom.trim()
     if (!nom) return
     afegeixItem(llista, { nom, quantitat: nou.quantitat.trim(), cat: nou.cat })
+    desaProducte(app.compra, nom, nou.cat)
+    treuExclous(app.compra, nom)
     nou.nom = ''
     nou.quantitat = ''
     desa()
+  }
+
+  function afegeixDesat(p) {
+    if (jaAla(p)) return
+    afegeixItem(llista, { nom: p.nom, quantitat: '', cat: p.cat })
+    treuExclous(app.compra, p.nom)
+    afegits += 1
+    desa()
+  }
+
+  function obrirDesats() {
+    afegits = 0
+    vista = vista === 'desats' ? 'llista' : 'desats'
   }
 
   function alterna(it) {
@@ -64,18 +87,24 @@
 
   async function desarItem() {
     if (!editant || !editant.nom.trim()) return
-    actualitzaItem(llista, editant.id, {
-      nom: editant.nom.trim(),
-      quantitat: editant.quantitat.trim(),
-      cat: editant.cat,
-    })
+    actualitzaItem(
+      llista,
+      editant.id,
+      {
+        nom: editant.nom.trim(),
+        quantitat: editant.quantitat.trim(),
+        cat: editant.cat,
+      },
+      app.compra,
+    )
+    desaProducte(app.compra, editant.nom.trim(), editant.cat)
     editant = null
     desa()
   }
 
   async function esborrarItem() {
     if (!editant) return
-    esborraItem(llista, editant.id)
+    esborraItem(llista, editant.id, app.compra)
     editant = null
     desa()
   }
@@ -110,13 +139,17 @@
     <div class="fila espai" style="margin-bottom: 4px">
       <h2 class="titol">{llista.icona} {llista.nom}</h2>
       <div class="fila" style="gap: 6px">
+        <button class="boto ghost" class:actiu={vista === 'desats'} onclick={obrirDesats} aria-label="Productes desats" type="button">
+          📦
+        </button>
         <button
           class="boto ghost"
+          class:actiu={vista === 'cats'}
           onclick={() => (vista = vista === 'cats' ? 'llista' : 'cats')}
           aria-label="Categories"
           type="button"
         >
-          {vista === 'cats' ? 'Tornar' : '⚙️'}
+          ⚙️
         </button>
         <button class="boto ghost" onclick={tanca} type="button">✕</button>
       </div>
@@ -156,10 +189,39 @@
       <div class="fila" style="gap: 8px; margin-top: 16px">
         <button class="boto" style="flex: 1" onclick={() => (vista = 'llista')}>Fet</button>
       </div>
+    {:else if vista === 'desats'}
+      <p class="suau" style="margin: 4px 0 8px">
+        Toca els productes desats per afegir-los a la llista sense tornar-los a escriure.
+      </p>
+      {#if !grupsProds.length}
+        <p class="suau" style="margin-top: 16px">
+          Encara no hi ha productes desats. Es guarden sols quan escrius un producte nou, i els pots gestionar a
+          <strong>Menú → 📦 Productes</strong>.
+        </p>
+      {:else}
+        {#each grupsProds as g (g.cat.id)}
+          <div class="grup">
+            <span class="grup-titol">{g.cat.icona} {g.cat.nom}</span>
+            <div class="xips">
+              {#each g.items as p (p.id)}
+                <button class="xip-prod" class:ja={jaAla(p)} onclick={() => afegeixDesat(p)} type="button">
+                  {jaAla(p) ? '✓ ' : ''}{p.nom}
+                </button>
+              {/each}
+            </div>
+          </div>
+        {/each}
+      {/if}
+      <div class="fila" style="gap: 8px; margin-top: 12px">
+        <button class="boto" style="flex: 1" onclick={() => (vista = 'llista')} type="button">
+          Fet{afegits ? ` (${afegits} afegits)` : ''}
+        </button>
+      </div>
     {:else}
       {#if llista.automatica}
         <p class="suau" style="margin: 4px 0 0">
-          S'actualitza amb els ingredients del menú. Els productes que hi afegeixis a mà es queden.
+          S'actualitza amb els ingredients del menú. El que esborris aquí no torna a sortir; el que afegeixis a mà es
+          queda.
         </p>
       {/if}
 
@@ -352,5 +414,29 @@
     background: #fff;
     border: 1px solid var(--linia);
     font-size: 12px;
+  }
+  .boto.actiu {
+    background: var(--primari-suau);
+    border-color: var(--primari);
+  }
+  .xips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    padding: 2px 0 4px;
+  }
+  .xip-prod {
+    padding: 7px 11px;
+    border-radius: 999px;
+    background: #fff;
+    border: 1px solid var(--linia);
+    font-size: 13px;
+    color: var(--text);
+  }
+  .xip-prod.ja {
+    background: var(--primari-suau);
+    border-color: var(--primari);
+    color: var(--primari);
+    font-weight: 600;
   }
 </style>

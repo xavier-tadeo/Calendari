@@ -2,20 +2,22 @@
   import { app } from '../lib/state.svelte.js'
   import { DIES, DIES_NOM } from '../lib/dates.js'
   import { menuActual, estatMeal, personesMenu, platsCataleg } from '../lib/menu.js'
-  import { llistesDe, llistaDe, comptatge, afegeixLlista, esborraLlista } from '../lib/compra.js'
+  import { llistesOrdenades, llistaDe, comptatge, afegeixLlista, esborraLlista } from '../lib/compra.js'
   import { saveMenu, saveCompra } from '../lib/load.js'
   import MenuSheet from '../components/MenuSheet.svelte'
   import PlatsSheet from '../components/PlatsSheet.svelte'
   import CompraSheet from '../components/CompraSheet.svelte'
+  import ProductesSheet from '../components/ProductesSheet.svelte'
 
   let menu = $state(menuActual(app.menu))
   let sheet = $state(null)
   let platsSheet = $state(false)
+  let productesSheet = $state(false)
   let oberta = $state(null)
   let editant = $state(null)
 
   const persones = $derived(personesMenu(app.config))
-  const llistes = $derived(llistesDe(app.compra))
+  const llistes = $derived(llistesOrdenades(app.compra))
 
   async function desar() {
     app.menu = $state.snapshot(menu)
@@ -112,7 +114,10 @@
   </div>
 {/each}
 
-<h2 class="titol" style="font-size: 18px; margin: 16px 0 6px">Llistes de la compra</h2>
+<div class="fila espai" style="margin: 16px 0 6px">
+  <h2 class="titol" style="font-size: 18px; margin: 0">Llistes de la compra</h2>
+  <button class="boto ghost petit" onclick={() => (productesSheet = true)} type="button">📦 Productes</button>
+</div>
 {#each llistes as l (l.id)}
   {@const ct = comptatge(l)}
   <div class="targeta llista-card">
@@ -152,6 +157,10 @@
 
 {#if platsSheet}
   <PlatsSheet onclose={() => (platsSheet = false)} />
+{/if}
+
+{#if productesSheet}
+  <ProductesSheet onclose={() => (productesSheet = false)} />
 {/if}
 
 {#if oberta && llistaDe(app.compra, oberta)}
